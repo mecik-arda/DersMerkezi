@@ -1,0 +1,10 @@
+Eski gorev XML'i kaydedildi: DosyaOrganizasyonu_HaftalikCek
+Kaynak manifesti: 2 dosya
+Eski durum dosyasi kopyalandi
+Zaten ayni, kopyalanmadi: Hafta 1.md
+Zaten ayni, kopyalanmadi: Hafta 1.pdf
+Manifest dogrulandi: 2 dosya
+Ders kaydi zaten var: dosya-organizasyonu
+Cekme dogrulamasi: yeni=0 guncellenen=0 atlanan=1 baglam=1
+Yeni gorev dogrulandi: DersMerkezi_dosya-organizasyonu (Ready)
+Eski gorev kaldirildi: DosyaOrganizasyonu_HaftalikCek

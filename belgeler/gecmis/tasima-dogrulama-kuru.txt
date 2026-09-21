@@ -1,0 +1,4 @@
+UYARI: Eski gorev bulunamadi: DosyaOrganizasyonu_HaftalikCek
+Kaynak manifesti: 2 dosya
+Eski durum dosyasi kopyalandi
+KURU CALISMA: kopyalama, ders kaydi ve gorev islemleri yapilmadi.
