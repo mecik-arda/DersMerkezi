@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.1.2 - 2026-09-22
+
+### Eklendi
+
+* `--json`: `--durum`, `--listele`, `--cek`, `--saglik`, `--surum` ve `--oto-tamamlama` için tek JSON nesnesi çıktısı (`json_surum`, `komut`, `uygulama_surum`; hata durumunda stderr'de `{json_surum, komut, hata:{sinif, mesaj}}`).
+* `--cek --kuru`: indirme yapmadan planlanan işi gösterir (yeni/güncellenecek/atlanan, planlanan bayt); hiçbir dosya, `.part` veya durum dosyası yazılmaz; bozuk durum karantinaya alınmaz.
+* `--surum`: sürüm tek kaynaktan (`merkez.__version__`) yazılır; `indirici.UA` bu değerden türetilir.
+* `--sil --onayla`: geri dönüşsüz ders silme CLI'da açık onaya bağlandı; onaysız çağrı exit 2 (TUI `Confirm` akışı korunur).
+* Kombinasyon doğrulaması: mod dışlaması ve bayrak-mod matrisi `merkez/komut.py` içindeki `dogrula` ile uygulanır; moda özgü seçenekler `None` varsayılanla ayrıştırılıp gerçek varsayılanlar doğrulama sonrası uygulanır; ayrıştırma hataları Türkçe şablonlara çevrilir.
+* `--zorla` (indirme + bağlam) ve `--zorla-md` (yalnız bağlam) seçenekleri; doğrulama zinciri (blob SHA, `md_sha`/`md_boyut`) korunur.
+* `--saglik`: ağsız varsayılan ortam ön kontrolü (Python/paket sürümleri, ayar şeması, ders kayıtları, kilit, günlük/durum erişimi); `--ders` tek depo çağrısı, `--ag` ilk 10 ders; sorun varsa exit 1. Sağlık hiçbir dosya/dizin/yedek/günlük oluşturmaz.
+* `--durum --ayrintili`: `sonCalisma`, `sonSonuc`, `eylem` ve durum dosyası özeti (dosya, bayt, güncelleme).
+* `--kilit-bekle <sn>` (0-3600): kilit doluyken sınırlı bekleme; süre aşımında mevcut "atlandı" davranışı ve ek bloklama yapmayan fail-closed günlük.
+* `--sinir <MB>` (1-200): indirme boyut üst sınırı yalnız düşürülebilir; 200 MB değişmezi korunur.
+* `--otomasyon-kur --tetikle`: kurulum sonrası görev bir kez çalıştırılır; `LastTaskResult` yalnız kanıtlanan değerlerle yorumlanır (0 başarılı, 267011 hiç çalışmadı; diğerleri ham/hex), zaman aşımında koşul teşhisi ve exit 1.
+* `--her-gun` / `--hafta-ici`: otomasyon gün kısayolları; `--gunler` ile birlikte kullanılamaz.
+* `--log <yol>`: proje kökü içinde alternatif günlük yolu; `realpath` + reparse denetimi, yazım anında yeniden doğrulama, aynı 1 MB `.old` rotasyonu.
+* `--oto-tamamlama`: parser'dan türetilen bayrak listesiyle `tamamlama/dersmerkezi-tamamlama.ps1` (PowerShell 5.1 `Register-ArgumentCompleter`) üretir; klasör `.gitignore` dışındadır.
+* TUI eşliği: Dersleri Çek menüsünde "Önizleme (kuru çalışma)" ve zorlama onayı, kilit doluyken "Bekle/Atla" sorusu, "Durum / Sağlık" ekranı (ayrıntılı durum + sağlık kontrolü), Otomasyon detayında "Kur ve hemen dene" ve gün kısayolları, ana menü başlığında sürüm.
+
+### Düzeltildi
+
+* Çıktı kanalı politikası çağrı kapsamlı: `--json` modunda insan-okur metinler stderr'e gider, JSON stdout'ta tek nesne kalır; global durum `try/finally` ile geri yüklenir.
+* `--sil` zinciri `zamanlayici.ders_sil_guvenli` ortak işlevine alındı; CLI ve TUI aynı sahiplik denetimli silme akışını kullanır.
+* Görev tetikleme öncesi tek-eylem sahipliği yeniden doğrulanır; sorgu hatası fail-closed, yabancı görev tetiklenmez; kurulum kesinleşme noktası ayar yazımının başarısıdır ve tetikleme hatası kurulumu geri almaz.
+
+### Doğrulama
+
+* Geçici klasördeki proje kopyasında 164 birim/akış + 14 tetikleme/sahiplik kontrolü geçti; sonuçlar `belgeler/plan/2026-09-21-cli-gelistirme-onerileri.md` "Uygulama ve Doğrulama Kanıtları (0.1.2)" bölümüne işlendi.
+* Uçtan uca ve kapsam testi (2026-09-22): geçici kopyada 374/374 kontrol (164 birim/akış + 150 fonksiyon kapsamı + 46 uçtan uca + 14 tetikleme/sahiplik) geçti; `trace` ile 131/131 fonksiyon ve ifade satırlarının %81'i çağrıldı; gerçek ağ ve Görev Zamanlayıcı üzerinden tam görev yaşam döngüsü (`--her-gun`/`--hafta-ici` maskeleri, `--tetikle`, kaldırma, silme) doğrulandı; üretim görevi değişmedi.
+* Sol bağımsız kod denetimi 3 turda tamamlandı (8 orta + 2 düşük bulgu açıldı; kanal istisnası, kuru karantina, 200 MB guard, `--log` yazılabilirlik/rotasyon, TUI salt-okunurluk ve eşlik, Rich kaçışları ve üretilen betik yorumsuzluğu düzeltildi); son turda `SONUC: ONAY` alındı; rapor `belgeler/gecmis/sol-denetim-2026-09-22-0.1.2.md`.
+* Doğrulama kapısı: `compileall`, gerçek projede `--cek --sessiz` (`atlanan=1`), `--durum`, `--durum --ayrintili`, `--saglik`, test dersiyle `--otomasyon-kur --tetikle` / `--otomasyon-kaldir`.
+
 ## 0.1.1 - 2026-09-21
 
 ### Eklendi

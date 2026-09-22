@@ -23,35 +23,52 @@ Private depo: <https://github.com/mecik-arda/DersMerkezi>
 
 ## Kullanım (TUI)
 
-* **Dersleri Çek:** İşaretli derslerin içeriklerini canlı yüzde çubuğuyla indirir ve bağlam üretir.
+* **Dersleri Çek:** İşaretli derslerin içeriklerini canlı yüzde çubuğuyla indirir ve bağlam üretir; menüden "Önizleme (kuru çalışma)" ve zorla yenileme seçilebilir. Kilit doluyken "Bekle/Atla" sorulur.
 * **Dersler:** Ders ekleme (ad, `owner/repo`, dal, desen), çıkarma, listeleme.
 * **Ayarlar:** Hangi derslerin çekileceğinin işaretlenmesi.
-* **Otomasyon Ayarla:** Ders bazında haftalık gün(ler) + saat seçimi; görev kurma, kaldırma ve durum sorgulama.
+* **Otomasyon Ayarla:** Ders bazında haftalık gün(ler) + saat seçimi; "Tümü"/"Hafta içi" kısayolları, görev kurma, "Kur ve hemen dene" ve kaldırma.
+* **Durum / Sağlık:** Görev durumu, son çalışma/sonuç, eylem ve durum dosyası özeti; ağsız veya ağlı sağlık kontrolü.
 
 ## Komut Satırı (headless)
 
 * Ders ekleme: `python dersmerkezi.py --ekle --ad "Dosya Organizasyonu" --depo emirozturk/Dosya-Organizasyonu-2026`
-* Listeleme: `python dersmerkezi.py --listele`
-* Ders silme: `python dersmerkezi.py --sil --ders dosya-organizasyonu` (varsa görevi de kaldırır)
+* Listeleme: `python dersmerkezi.py --listele` / JSON: `python dersmerkezi.py --listele --json`
+* Ders silme: `python dersmerkezi.py --sil --ders dosya-organizasyonu --onayla` (onaysız çağrı exit 2; varsa görevi de kaldırır)
 * Çekme: `python dersmerkezi.py --cek --ders dosya-organizasyonu --sessiz`
+* Kuru çekme (önizleme): `python dersmerkezi.py --cek --ders dosya-organizasyonu --kuru`
+* Zorla yenileme: `python dersmerkezi.py --cek --zorla --sessiz` (yalnız bağlam: `--zorla-md`)
+* Boyut sınırı: `python dersmerkezi.py --cek --sinir 100 --kuru`
+* Kilit bekleme: `python dersmerkezi.py --cek --kilit-bekle 60`
 * Otomasyon kurma: `python dersmerkezi.py --otomasyon-kur --ders dosya-organizasyonu --gunler PZT --saat 09:00`
+* Gün kısayolları: `--her-gun` veya `--hafta-ici` (`--gunler` ile birlikte kullanılamaz)
+* Kur ve hemen dene: `python dersmerkezi.py --otomasyon-kur --ders dosya-organizasyonu --tetikle`
 * Otomasyon kaldırma: `python dersmerkezi.py --otomasyon-kaldir --ders dosya-organizasyonu`
-* Durum: `python dersmerkezi.py --durum`
+* Durum: `python dersmerkezi.py --durum` (ayrıntılı: `--durum --ayrintili`)
+* Sağlık kontrolü: `python dersmerkezi.py --saglik` (ders için ağ: `--saglik --ders <kimlik>`; tümü: `--saglik --ag`)
+* JSON çıktı: `--durum`, `--listele`, `--cek`, `--saglik`, `--surum`, `--oto-tamamlama` ile `--json`
+* Sürüm: `python dersmerkezi.py --surum`
+* PowerShell tamamlama: `python dersmerkezi.py --oto-tamamlama` (çıktı: `tamamlama/dersmerkezi-tamamlama.ps1`)
+* Alternatif günlük: `python dersmerkezi.py --durum --log alt/gunluk.log`
 * Taşıma (kuru çalışma): `python dersmerkezi.py --tasima --kuru`
 * Taşıma (uygula, eski görevi kaldırmadan): `python dersmerkezi.py --tasima`
 * Taşıma (eski görevi de kaldır): `python dersmerkezi.py --tasima --onayla`
-* Çıkış kodları: 0 başarı, 1 hata, 2 kullanım hatası.
+* Çıkış kodları: 0 başarı, 1 hata, 2 kullanım hatası. Geçersiz bayrak kombinasyonları hiçbir yan etki oluşturmadan exit 2 verir.
 
 ## Dizin Yapısı
 
 * `dersmerkezi.py`: Giriş noktası (CLI argümanları ve TUI başlatma).
+* `merkez/komut.py`: Argüman ayrıştırıcı, mod/bayrak matrisi doğrulaması, JSON çıktı sözleşmesi ve Türkçe ayrıştırma hataları.
 * `merkez/ayarlar.py`: `ayarlar.json` şeması, doğrulama, atomik yazım, migration.
-* `merkez/indirici.py`: GitHub Contents API listeleme, akışlı indirme, blob SHA doğrulama, Markdown dönüşümü.
-* `merkez/zamanlayici.py`: PowerShell köprüsü ile görev kurma, kaldırma, sorgulama.
+* `merkez/indirici.py`: GitHub Contents API listeleme (kota meta verisi), akışlı indirme, blob SHA doğrulama, Markdown dönüşümü, kuru çalışma.
+* `merkez/durum.py`: Ders/görev durum kayıtları ve ayrıntılı durum verisi (CLI + TUI ortak).
+* `merkez/saglik.py`: Ağsız varsayılan sağlık denetimi, isteğe bağlı depo/kota kontrolü.
+* `merkez/tamamlama.py`: PowerShell tamamlama betiği üretimi.
+* `merkez/zamanlayici.py`: PowerShell köprüsü ile görev kurma, kaldırma, sorgulama, tetikleme ve sahiplik denetimli silme.
 * `merkez/tasima.py`: Eski otomasyonun güvenli sırayla taşınması (kanıt kayıtları, manifest doğrulaması).
-* `merkez/ps/`: Sabit PowerShell betikleri (`gorev_kur.ps1`, `gorev_kaldir.ps1`, `gorev_sorgu.ps1`, `gorev_sil.ps1`).
+* `merkez/ps/`: Sabit PowerShell betikleri (`gorev_kur.ps1`, `gorev_kaldir.ps1`, `gorev_sorgu.ps1`, `gorev_tetikle.ps1`, `gorev_sil.ps1`, `gorev_yukle.ps1`).
 * `merkez/arayuz.py`: Rich + msvcrt tabanlı menüler ve canlı ilerleme ekranı.
-* `merkez/gunluk.py`: `gunluk.log` (UTF-8, 1 MB rotasyon) ve `Local\DersMerkezi` kilidi.
+* `merkez/gunluk.py`: `gunluk.log` (UTF-8, 1 MB rotasyon), alternatif günlük yolu ve `Local\DersMerkezi` kilidi.
+* `tamamlama/`: Üretilen PowerShell tamamlama betiği (`.gitignore` dışındadır).
 * `belgeler/plan/`: Keşif ve plan belgesi.
 * `belgeler/referans/eski-otomasyon/`: Taşınacak eski PowerShell otomasyon kopyaları.
 * `belgeler/gecmis/`: Taşıma kanıtları (görev XML'i, manifestler, doğrulama çıktısı).

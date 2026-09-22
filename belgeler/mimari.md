@@ -8,14 +8,18 @@ DersMerkezi, Windows masaüstünde çalışan Python + Rich tabanlı çok dersli
 
 ## Modül Haritası
 
-* `dersmerkezi.py`: Giriş noktası; komut satırı argümanları, çıkış kodları (0 başarı, 1 hata, 2 kullanım hatası) ve TUI başlatma.
-* `merkez/ayarlar.py`: `ayarlar.json` şeması (sürüm 1), doğrulama (slug, ad, depo/URL, dal, desen, saat, gün, dosya adı), atomik yazım ve tek nesil yedek.
-* `merkez/indirici.py`: GitHub Contents API listeleme, akışlı indirme (`.part`), Git blob SHA-1 doğrulama, Markdown üretimi, durum şeması sürüm 2.
-* `merkez/zamanlayici.py`: PowerShell köprüsü (`-File` + adlandırılmış parametreler); görev kurma, kaldırma, sorgu, geri yükleme, sahiplik denetimi.
+* `dersmerkezi.py`: Giriş noktası; mod işleyicileri, çıkış kodları (0 başarı, 1 hata, 2 kullanım hatası) ve TUI başlatma.
+* `merkez/komut.py`: Argüman ayrıştırıcı (`arguman_ayristirici`), mod/bayrak matrisi (`dogrula`), JSON çıktı sözleşmesi (`kok_json`, `json_yaz`, `hata_json_yaz`) ve Türkçe ayrıştırma hata eşlemesi.
+* `merkez/ayarlar.py`: `ayarlar.json` şeması (sürüm 1), doğrulama (slug, ad, depo/URL, dal, desen, saat, gün, dosya adı; `veri_dogrula`/`ders_dogrula` salt-okunur doğrulama), atomik yazım ve tek nesil yedek.
+* `merkez/indirici.py`: GitHub Contents API listeleme (isteğe bağlı kota meta verisi), akışlı indirme (`.part`), Git blob SHA-1 doğrulama, Markdown üretimi, kuru/`zorla`/`zorla-md` modları, durum şeması sürüm 2.
+* `merkez/durum.py`: Ders ve görev durum kayıtları; isteğe bağlı ayrıntı (son çalışma, son sonuç, eylem, durum dosyası özeti); CLI ve TUI ortak.
+* `merkez/saglik.py`: Salt-okunur sağlık denetimi (ortam, ayar şeması, ders kayıtları, kilit, günlük/durum erişimi); `--ders`/`--ag`/`--ayrintili` ile sınırlı ağ ve görev sorgusu.
+* `merkez/tamamlama.py`: Parser'dan türetilen bayrak listesiyle PowerShell tamamlama betiği üretimi (atomik yazım).
+* `merkez/zamanlayici.py`: PowerShell köprüsü (`-File` + adlandırılmış parametreler); görev kurma, kaldırma, sorgu, geri yükleme, tetikleme (`gorev_tetikle`), sahiplik denetimi ve `ders_sil_guvenli`.
 * `merkez/tasima.py`: Eski PowerShell otomasyonunun kanıtlı ve geri alınabilir taşınması.
-* `merkez/arayuz.py`: Rich + msvcrt TUI (menü, çoklu seçim, canlı ilerleme); dinamik metinler `rich.markup.escape` ile kaçışlanır.
-* `merkez/gunluk.py`: `gunluk.log` (UTF-8, 1 MB rotasyon) ve `Local\DersMerkezi` mutex'i; kilit alınamazsa yazım atlanır (fail-closed).
-* `merkez/ps/*.ps1`: Sabit PowerShell betikleri (`gorev_kur`, `gorev_kaldir`, `gorev_sorgu`, `gorev_yukle`, `gorev_sil`).
+* `merkez/arayuz.py`: Rich + msvcrt TUI (menü, çoklu seçim, canlı ilerleme, kuru önizleme, Durum/Sağlık ekranı, tetikleme); dinamik metinler `rich.markup.escape` ile kaçışlanır.
+* `merkez/gunluk.py`: `gunluk.log` (UTF-8, 1 MB rotasyon), `--log` için kök içi doğrulanmış alternatif yol, `kilit_dolu` yardımcısı ve `Local\DersMerkezi` mutex'i; kilit alınamazsa yazım atlanır (fail-closed).
+* `merkez/ps/*.ps1`: Sabit PowerShell betikleri (`gorev_kur`, `gorev_kaldir`, `gorev_sorgu`, `gorev_tetikle`, `gorev_yukle`, `gorev_sil`).
 
 ## Veri Akışı
 
@@ -31,6 +35,16 @@ CLI/TUI
 ```
 
 Zamanlanmış koşularda `pythonw.exe` ile `--otomatik --ders <kimlik> --sessiz` çalışır; `--otomatik` seçili olma şartını atlar ve yalnızca günlüğe yazar.
+
+## CLI Sözleşmeleri
+
+* **Mod matrisi:** Aynı anda en fazla bir mod (`--listele`, `--ekle`, `--sil`, `--cek`, `--durum`, `--saglik`, `--otomasyon-kur`, `--otomasyon-kaldir`, `--tasima`, `--surum`, `--oto-tamamlama`); `--otomatik` tek başına zamanlanmış koşu modudur veya `--cek` ile birleşir. Moda özgü seçenekler argparse'ta `None` varsayılanla tanımlanır; gerçek varsayılanlar doğrulama sonrası uygulanır. İhlalde stderr'e Türkçe mesaj + exit 2, hiçbir yan etki yoktur.
+* **Kanal politikası:** `--json` başarıda stdout'ta tek JSON nesnesi (`json_surum`, `komut`, `uygulama_surum`); çalışma hatasında stdout boş, stderr'de JSON hata nesnesi + insan satırı; kullanım hatasında düz Türkçe. JSON modunda `gunluk.kayit` insan metnini stderr'e yazar; global çıktı durumu `main` içinde `try/finally` ile geri yüklenir.
+* **Kuru çalışma:** `--cek --kuru` hedef klasör oluşturmaz, `.part`/geçici dosya silmez, durum dosyası yazmaz ve bozuk durumu karantinaya almaz; yalnız listeleme + yerel boyut/SHA karşılaştırması yapar, planlanan baytı raporlar.
+* **Sağlık:** Varsayılan ağsız ve salt-okunur; hiçbir dosya/dizin/yedek/günlük oluşturmaz. Ağ yalnız `--ders` (tek çağrı) veya `--ag` (ilk 10 ders) ile; görev sorgusu yalnız `--ders`/`--ayrintili` (en fazla 20 ders) ile yapılır. Kota meta verisi `depo_listele(meta=True)` üzerinden `limit/kalan/sifirla` olarak döner.
+* **Tetikleme:** `--tetikle` yalnız kurulum başarısından sonra çalışır; öncesinde tek-eylem sahipliği yeniden doğrulanır (sorgu hatası fail-closed, yabancı görev başlatılmaz). Tamamlanma ölçütü: durum `Running`/`Queued` dışına çıkar ve `LastRunTime` referanstan yenidir; 60 sn zaman aşımında koşul teşhisi yazılır ve exit 1 döner.
+* **Günlük yolu:** `--log` hedefi `realpath` ile kök içinde olmalı, mevcut dizin veya reparse noktası olamaz; her yazımdan önce yeniden doğrulanır ve 1 MB `.old` rotasyonu korunur.
+* **Arayüz eşliği:** CLI ve TUI aynı ortak işlevleri çağırır (`indirici.indir_ders`, `zamanlayici.gorev_kur_guvenli`, `zamanlayici.gorev_tetikle`, `zamanlayici.ders_sil_guvenli`, `durum.kayitlar`, `saglik.denetle`); 0/1/2 yalnızca CLI süreç sonucudur, TUI hata sınıflarını Türkçe iletiye dönüştürüp menü döngüsünü korur.
 
 ## Şemalar
 

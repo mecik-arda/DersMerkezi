@@ -293,3 +293,22 @@ Pil politikası kök nedeni ve üretim görevi elle tetikleme kanıtı (2026-09-
 * Araştırma için Gemini rotaları (3.8 Flash ve Pro) denendi; ikisi de `web_evidence_invalid` verdi (AGENTS'teki bilinen sınırlama). `gh repo create` söz dizimi yerel `gh repo create --help` çıktısı ve `gh auth status` ile doğrulandı.
 
 Kabul kriterleri durumu: 1-18 fiili doğrulama dahil tamamlandı; kalan yalnızca üretim görevinin takvimli ilk koşusunun ve gerçek konsol TUI görünümünün kullanıcı tarafında teyidi.
+
+
+### CLI Genişletmesi 0.1.2 Kanıtları (2026-09-22)
+
+* Kapsam: `belgeler/plan/2026-09-21-cli-gelistirme-onerileri.md` (Öncelik 1-3, 1.1-3.5) uygulandı; Sol tur 6 ONAY'lı plan ve "Eşlik Listesi" uygulandı.
+* Derleme: `python -m compileall merkez dersmerkezi.py` hatasız (exit 0).
+* Birim/akış paketi (geçici proje kopyası, `dm-test-012`): 164/164 kontrol geçti; kapsam: mod/bayrak matrisi (31 geçerli + 30 geçersiz kombinasyon), Türkçe ayrıştırma hataları, JSON şemaları (durum/listele/cek/saglik/surum/oto-tamamlama), `--surum`-CHANGELOG eşitliği, onaylı silme, kuru mutasyonsuzluk (hedef klasör oluşmadı, bozuk durum karantinaya alınmadı), zorla/zorla-md, sınır, kilit bekleme fail-closed, `--log` kök/dizin/junction negatifleri, sağlık bozuk ayar (karantinasız), TUI ekranları (sağlık, kuru önizleme, ana menü, durum), taşıma kuru.
+* Tetikleme/sahiplik paketi: 14/14 kontrol geçti; sorgu hatası ve yabancı görevde görev asla başlatılmaz (`_ps` çağrı sayısı 0), başarısız sonuç kodu ayrıştırılır, zaman aşımı teşhisi hata olarak yükseltilir, `ders_sil_guvenli` fail-closed.
+* Doğrulama kapısı (gerçek proje): `--cek --ders dosya-organizasyonu --sessiz` → `atlanan=1`, exit 0; `--cek --json --sessiz` → geçerli JSON, exit 0; `--durum`, `--durum --ayrintili`, `--surum` (0.1.2) doğrulandı.
+* Sağlık (gerçek): `--saglik` ağsız exit 0; `--saglik --ders dosya-organizasyonu` tek API çağrısı, kota `limit=60 kalan=56`, exit 0; `--saglik --ag` exit 0.
+* `--log`: `--cek --kuru --log alt-dene/gunluk-test.log` özel yola yazdı (satır kanıtı), geçici klasör silindi.
+* Kontrollü test görevi (`DersMerkezi_dm-test-012`, üretim görevi değiştirilmedi):
+  * `--otomasyon-kur --hafta-ici` → görev Ready, DaysOfWeek bit maskesi 62 (PZT-CUM) doğrulandı.
+  * `--tetikle` (ilk koşu, indirme dâhil ~2,5 dk): 60 sn yoklama sınırında durum `Running`, sonuç `sonuc=0x41301 (anlam dogrulanmadi)`, exit 1; teşhis satırı raporlandı (ham/hex kuralı uygulandı).
+  * Görev arka planda tamamlandı: `LastTaskResult=0`, günlükte `dm-test-012: yeni=1 ... baglam=1`.
+  * `--tetikle` (ikinci koşu, içerik hazır): `Tetikleme: basarili (0) (durum: Ready) | son gunluk: ... atlanan=1 ...`, exit 0.
+  * Temizlik: `--otomasyon-kaldir` (görev sorgusu 0 kayıt), `--sil --onayla`, `dersler/dm-test-012` klasörü kaldırıldı; üretim görevi Ready ve sonraki koşu 28.09.2026 09:00.
+* Sol uygulama denetimi tur 1 (8 bulgu: 6 orta, 2 düşük) kapatıldı: kanal istisnası netleştirildi, kuru akışta ayar karantinası kaldırıldı (`yukle_salt`), `indir_ders` 1-200 MB fail-closed koruması, `--log` yazılabilirlik kanıtı ve özel günlük hatasında exit 1, TUI durum ekranında salt-okunur ayar okuma + sağlık erişimi, TUI zorla-md ve tek ders sağlık seçenekleri, Rich kaçışları, üretilen betikte yorumsuzluk. Yeni test paketi: 164 birim/akış + 14 tetikleme/sahiplik; gerçek proje doğrulama kapısı yeniden koşuldu. Tur 2'de açık kalan rotasyon bulgusu kapatıldı; Sol tur 3 `SONUC: ONAY` (rapor: `belgeler/gecmis/sol-denetim-2026-09-22-0.1.2.md`).
+* Sol denetimi: `belgeler/gecmis/sol-denetim-2026-09-22-0.1.2.md` (tur sonuçları).

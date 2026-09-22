@@ -49,7 +49,7 @@ def beklenen_arguman(slug):
     return '"{0}" --otomatik --ders {1} --sessiz'.format(ayarlar.KOK / "dersmerkezi.py", slug)
 
 
-def _sorgu_bizim(sorgu, slug):
+def sorgu_bizim(sorgu, slug):
     execute = str(sorgu.get("execute") or "").strip().lower()
     eylem = str(sorgu.get("eylem") or "").strip()
     if int(sorgu.get("eylemSayisi") or 0) != 1:
@@ -62,14 +62,14 @@ def gorev_bizim(slug):
         sorgu = gorev_sorgu(slug)
     except Exception:
         return False
-    return bool(sorgu.get("var")) and _sorgu_bizim(sorgu, slug)
+    return bool(sorgu.get("var")) and sorgu_bizim(sorgu, slug)
 
 
 def gorev_durumu(slug):
     sorgu = gorev_sorgu(slug)
     if not sorgu.get("var"):
         return "yok"
-    return "bizim" if _sorgu_bizim(sorgu, slug) else "yabanci"
+    return "bizim" if sorgu_bizim(sorgu, slug) else "yabanci"
 
 
 def gorev_yedek_yolu(slug):
@@ -147,6 +147,82 @@ def gorev_kaldir(slug):
 def gorev_sorgu(slug):
     _slug_dogrula(slug)
     return _ps("gorev_sorgu.ps1", {"GorevAdi": "DersMerkezi_" + slug})
+
+
+SONUC_ANLAMLARI = {0: "basarili", 267011: "hic calismadi"}
+
+
+def sonuc_metni(kod):
+    if kod is None:
+        return "sonuç bilinmiyor"
+    try:
+        sayi = int(kod)
+    except (TypeError, ValueError):
+        return "sonuc={} (anlam dogrulanmadi)".format(kod)
+    if sayi in SONUC_ANLAMLARI:
+        return "{} ({})".format(SONUC_ANLAMLARI[sayi], sayi)
+    return "sonuc=0x{:X} (anlam dogrulanmadi)".format(sayi & 0xFFFFFFFF)
+
+
+def zaman_asimi_mesaji(veri):
+    kosullar = veri.get("kosullar") or {}
+    nedenler = []
+    if kosullar.get("pilEngelli"):
+        nedenler.append("görev pilde başlatılmıyor")
+    if kosullar.get("yalnizBosta"):
+        nedenler.append("yalnızca bilgisayar boştayken çalışır")
+    if kosullar.get("yalnizAg"):
+        nedenler.append("yalnızca ağ bağlantısı varken çalışır")
+    if kosullar.get("logonTuru"):
+        nedenler.append("oturum türü: {}".format(kosullar.get("logonTuru")))
+    if kosullar.get("pilDurumu"):
+        nedenler.append("pil durumu (PowerOnline): {}".format(kosullar.get("pilDurumu")))
+    mesaj = "Görev zaman aşımına uğradı (durum: {}, son sonuç: {})".format(
+        veri.get("durum", ""), sonuc_metni(veri.get("sonSonuc")))
+    if nedenler:
+        mesaj += "; olası neden: " + "; ".join(nedenler)
+    return mesaj
+
+
+def gorev_tetikle(slug, zaman_asimi=60):
+    _slug_dogrula(slug)
+    sorgu = gorev_sorgu(slug)
+    if not sorgu.get("var"):
+        raise RuntimeError("Görev bulunamadı: {}".format(slug))
+    if not sorgu_bizim(sorgu, slug):
+        raise RuntimeError("Görev bu kuruluma ait değil; tetiklenmedi: {}".format(slug))
+    veri = _ps("gorev_tetikle.ps1", {
+        "GorevAdi": "DersMerkezi_" + slug,
+        "BeklenenExecute": python_yolu(),
+        "BeklenenArguman": beklenen_arguman(slug),
+        "ZamanAsimi": int(zaman_asimi),
+    })
+    if veri.get("zamanAsimi"):
+        raise RuntimeError(zaman_asimi_mesaji(veri))
+    try:
+        sonuc = int(veri.get("sonSonuc"))
+    except (TypeError, ValueError):
+        sonuc = None
+    return {
+        "gorev": veri.get("gorev"),
+        "durum": veri.get("durum", ""),
+        "sonCalisma": veri.get("sonCalisma", ""),
+        "sonuc": sonuc,
+        "metin": sonuc_metni(sonuc),
+        "basarili": sonuc == 0,
+    }
+
+
+def ders_sil_guvenli(slug):
+    try:
+        sorgu = gorev_sorgu(slug)
+    except RuntimeError as hata:
+        raise RuntimeError("Görev sorgulanamadı: {}".format(hata))
+    if sorgu.get("var"):
+        if not sorgu_bizim(sorgu, slug):
+            raise RuntimeError("Görev bu kuruluma ait değil, ders silinmedi: {}".format(slug))
+        gorev_kaldir(slug)
+    ayarlar.ders_sil(slug)
 
 
 def gorev_sil_genel(ad):

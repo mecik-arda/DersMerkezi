@@ -7,7 +7,7 @@ from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeEl
 from rich.prompt import Confirm, Prompt
 from rich.table import Table
 
-from . import ayarlar, gunluk, indirici, zamanlayici
+from . import __version__, ayarlar, durum, gunluk, indirici, saglik, zamanlayici
 
 KONSOL = Console()
 
@@ -95,16 +95,18 @@ def _coklu_secim(baslik, ogeler, secili_kume):
         KONSOL.show_cursor(True)
 
 
-def _cek_ekrani(anahtarlar):
-    kilit = gunluk.Kilit()
-    if not kilit.al():
-        KONSOL.print("[yellow]Baska bir calisma suruyor; cekme atlandi.[/yellow]")
-        _bekle_enter()
-        return
+def _cek_ekrani(anahtarlar, kuru=False, zorla=False, zorla_md=False, kilit=None):
+    if kilit is None:
+        kilit = gunluk.Kilit()
+        if not kilit.al():
+            KONSOL.print("[yellow]Baska bir calisma suruyor; cekme atlandi.[/yellow]")
+            _bekle_enter()
+            return
     KONSOL.show_cursor(False)
     try:
         KONSOL.clear()
-        KONSOL.print(Panel.fit("[bold]Ders icerikleri cekiliyor[/bold]", border_style="cyan"))
+        baslik = "Ders icerikleri onizleniyor (kuru calisma)" if kuru else "Ders icerikleri cekiliyor"
+        KONSOL.print(Panel.fit("[bold]{}[/bold]".format(baslik), border_style="cyan"))
         for anahtar in anahtarlar:
             with Progress(SpinnerColumn(), TextColumn("[bold]{task.description}"), BarColumn(bar_width=None),
                           TextColumn("{task.percentage:>3.0f}%"), TimeElapsedColumn(), console=KONSOL) as ilerleme:
@@ -121,10 +123,12 @@ def _cek_ekrani(anahtarlar):
                                   completed=99)
 
                 try:
-                    rapor = indirici.indir_ders(anahtar, ilerleme=geri_bildirim)
+                    rapor = indirici.indir_ders(anahtar, ilerleme=geri_bildirim, kuru=kuru, zorla=zorla, zorla_md=zorla_md)
                     ilerleme.update(gorev, completed=100, description="{}: tamam (yeni={} guncel={} atlanan={} baglam={} hata={})".format(
                         escape(anahtar), rapor["yeni"], rapor["guncellenen"], rapor["atlanan"], rapor["baglam"],
                         rapor["dogrulama_hatasi"] + rapor["donusum_hatasi"]))
+                    if kuru and rapor.get("planlanan_bayt"):
+                        KONSOL.print("  [cyan]- indirilecek toplam: {} bayt[/cyan]".format(rapor["planlanan_bayt"]))
                     for hata in rapor["hatalar"]:
                         KONSOL.print("  [yellow]- {}[/yellow]".format(escape(str(hata))))
                 except (indirici.IndirmeHatasi, RuntimeError, ValueError, OSError) as hata:
@@ -145,8 +149,31 @@ def _cek_menu():
         KONSOL.print("[yellow]Cekilecek ders yok. Ayarlar menusunden isaretleyin.[/yellow]")
         _bekle_enter()
         return
-    if Confirm.ask("{} ders cekilecek. Baslansin mi?".format(len(secililer)), default=True):
-        _cek_ekrani(secililer)
+    secim = _secim("Dersleri Cek", ["Cekmeyi baslat", "Onizleme (kuru calisma)", "Geri"],
+                   "{} ders secili".format(len(secililer)))
+    if secim is None or secim == 2:
+        return
+    kuru = secim == 1
+    zorla = False
+    zorla_md = False
+    if not kuru:
+        yenileme = _secim("Yenileme", ["Normal (gerekirse)", "Zorla yeniden indir", "Yalniz baglami yenile", "Geri"])
+        if yenileme is None or yenileme == 3:
+            return
+        zorla = yenileme == 1
+        zorla_md = yenileme == 2
+    kilit = gunluk.Kilit()
+    if not kilit.al():
+        if Confirm.ask("Baska bir calisma suruyor. 10 sn beklensin mi?", default=False):
+            if not kilit.al(10000):
+                KONSOL.print("[yellow]Kilit alinamadi; cekme atlandi.[/yellow]")
+                _bekle_enter()
+                return
+        else:
+            KONSOL.print("[yellow]Baska bir calisma suruyor; cekme atlandi.[/yellow]")
+            _bekle_enter()
+            return
+    _cek_ekrani(secililer, kuru=kuru, zorla=zorla, zorla_md=zorla_md, kilit=kilit)
 
 
 def _ders_tablosu(veri):
@@ -193,15 +220,7 @@ def _ders_sil_ekrani(veri):
     kimlik = ogeler[secim][0]
     if Confirm.ask("'{}' kaydi silinsin mi? (indirilen dosyalar korunur)".format(kimlik), default=False):
         try:
-            try:
-                sorgu = zamanlayici.gorev_sorgu(kimlik)
-            except RuntimeError as hata:
-                raise RuntimeError("Gorev sorgulanamadi: {}".format(hata))
-            if sorgu.get("var"):
-                if not zamanlayici.gorev_bizim(kimlik):
-                    raise RuntimeError("Gorev bu kuruluma ait degil; ders silinmedi")
-                zamanlayici.gorev_kaldir(kimlik)
-            ayarlar.ders_sil(kimlik)
+            zamanlayici.ders_sil_guvenli(kimlik)
             KONSOL.print("[green]Silindi: {}[/green]".format(escape(kimlik)))
         except (ValueError, RuntimeError) as hata:
             KONSOL.print("[red]{}[/red]".format(escape(str(hata))))
@@ -253,26 +272,44 @@ def _otomasyon_detay(kimlik):
             durum = "sorgulanamadi"
         KONSOL.clear()
         KONSOL.print("[bold]{}[/bold]".format(escape(str(ders.get("ad", kimlik)))))
-        KONSOL.print("Tetik: {} {}".format(",".join(oto.get("gunler", [])) or "-", oto.get("saat", "")))
-        KONSOL.print("Gorev durumu: {}".format(durum))
+        KONSOL.print("Tetik: {} {}".format(
+            escape(",".join(str(gun) for gun in oto.get("gunler", []))) or "-", escape(str(oto.get("saat", "")))))
+        KONSOL.print("Gorev durumu: {}".format(escape(str(durum))))
         KONSOL.print()
-        secim = _secim("Otomasyon", ["Kur / guncelle", "Kaldir", "Geri"])
-        if secim is None or secim == 2:
+        secim = _secim("Otomasyon", ["Kur / guncelle", "Kur ve hemen dene", "Kaldir", "Geri"])
+        if secim is None or secim == 3:
             return
-        if secim == 0:
-            ogeler = GUN_ETIKET
-            mevcut = set(oto.get("gunler", []))
-            mevcut_kisa = {k for k, ing in ayarlar.GUNLER.items() if ing in mevcut}
-            secili_gunler = _coklu_secim("Haftalik gunleri sec", [(k, tam) for k, tam in ogeler], mevcut_kisa)
-            if not secili_gunler:
+        if secim in (0, 1):
+            gun_secim = _secim("Gun secimi", ["Gunleri tek tek sec", "Tumu (her gun)", "Hafta ici (PZT-CUM)", "Geri"])
+            if gun_secim is None or gun_secim == 3:
                 continue
+            if gun_secim == 1:
+                secili_gunler = set(ayarlar.HER_GUN)
+            elif gun_secim == 2:
+                secili_gunler = set(ayarlar.HAFTA_ICI)
+            else:
+                ogeler = GUN_ETIKET
+                mevcut = set(oto.get("gunler", []))
+                mevcut_kisa = {k for k, ing in ayarlar.GUNLER.items() if ing in mevcut}
+                secili_gunler = _coklu_secim("Haftalik gunleri sec", [(k, tam) for k, tam in ogeler], mevcut_kisa)
+                if not secili_gunler:
+                    continue
             try:
                 saat = Prompt.ask("Saat (SS:DD)", default=oto.get("saat", "09:00"))
                 ayarlar.gun_listesi_coz(sorted(secili_gunler))
                 if not ayarlar.saat_gecerli(saat):
                     raise ValueError("Saat SS:DD biciminde olmali")
                 sonuc = zamanlayici.gorev_kur_guvenli(kimlik, sorted(secili_gunler), saat)
-                KONSOL.print("[green]Gorev kuruldu: {} {}[/green]".format(",".join(sonuc.get("gunler", [])), escape(str(sonuc.get("saat", "")))))
+                KONSOL.print("[green]Gorev kuruldu: {} {}[/green]".format(
+                    escape(",".join(str(gun) for gun in sonuc.get("gunler", []))), escape(str(sonuc.get("saat", "")))))
+                if secim == 1:
+                    try:
+                        tetik = zamanlayici.gorev_tetikle(kimlik)
+                        renk = "green" if tetik["basarili"] else "red"
+                        KONSOL.print("[{}]Tetikleme: {} (durum: {})[/{}]".format(
+                            renk, escape(tetik["metin"]), escape(str(tetik.get("durum", ""))), renk))
+                    except RuntimeError as hata:
+                        KONSOL.print("[red]Tetikleme hatasi: {}[/red]".format(escape(str(hata))))
             except (ValueError, RuntimeError) as hata:
                 KONSOL.print("[red]{}[/red]".format(escape(str(hata))))
             _bekle_enter()
@@ -306,14 +343,91 @@ def otomasyon_ekrani():
         _otomasyon_detay(kimlik)
 
 
+def _saglik_ekrani():
+    secenekler = ["Varsayilan (agusiz)", "Ag kontrolu (ilk 10 ders)"]
+    veri, hata = ayarlar.yukle_salt()
+    dersler = sorted((veri or {}).get("dersler", {}))
+    if dersler:
+        secenekler.append("Tek ders icin ag kontrolu")
+    secenekler.append("Geri")
+    secim = _secim("Saglik kontrolu", secenekler)
+    if secim is None or secim == len(secenekler) - 1:
+        return
+    ders = None
+    ag = False
+    if secim == 1:
+        ag = True
+    elif secim == 2:
+        ders_secim = _secim("Ders sec", dersler + ["Geri"])
+        if ders_secim is None or ders_secim == len(dersler):
+            return
+        ders = dersler[ders_secim]
+    KONSOL.clear()
+    if hata:
+        KONSOL.print("[yellow]UYARI: {}[/yellow]".format(escape(hata)))
+    KONSOL.print("[dim]Denetleniyor...[/dim]")
+    try:
+        sonuc = saglik.denetle(ders=ders, ag=ag)
+    except Exception as hata_kontrol:
+        KONSOL.print("[red]Saglik kontrolu yapilamadi: {}[/red]".format(escape(str(hata_kontrol))))
+        _bekle_enter()
+        return
+    renkler = {"ok": "green", "uyari": "yellow", "sorun": "red"}
+    for kontrol in sonuc["kontroller"]:
+        renk = renkler.get(kontrol["durum"], "white")
+        KONSOL.print("[{}]{} {}: {}[/{}]".format(
+            renk, renk, escape(str(kontrol["ad"])), escape(str(kontrol["mesaj"])), renk))
+    if sonuc["kota"]:
+        KONSOL.print("Kota: limit={} kalan={} sifirla={}".format(
+            sonuc["kota"].get("limit"), sonuc["kota"].get("kalan"), sonuc["kota"].get("sifirla")))
+    renk = "red" if sonuc["sorunlar"] else "green"
+    KONSOL.print("[{}]Sonuc: {} (sorun={}, uyari={})[/{}]".format(
+        renk, escape(str(sonuc["genel"])), len(sonuc["sorunlar"]), len(sonuc["uyarilar"]), renk))
+    _bekle_enter()
+
+
+def durum_ekrani():
+    while True:
+        KONSOL.clear()
+        kayitlar, hata = durum.kayitlar_salt(ayrintili=True)
+        if hata:
+            KONSOL.print("[red]Ayarlar okunamadi: {}[/red]".format(escape(hata)))
+            KONSOL.print("[dim]Saglik kontrolu bozuk ayarlarla da calisir.[/dim]")
+        elif not kayitlar:
+            KONSOL.print("[yellow]Kayitli ders yok.[/yellow]")
+        else:
+            KONSOL.print("Ders sayisi: {}".format(len(kayitlar)))
+            for kayit in kayitlar:
+                gorev = kayit["otomasyon"]["gorev"]
+                KONSOL.print("{}: gorev={}".format(escape(str(kayit["kimlik"])), escape(str(gorev["durum"]))))
+                if gorev.get("sonCalisma"):
+                    KONSOL.print("  son calisma: {}".format(escape(str(gorev["sonCalisma"]))))
+                if gorev.get("sonSonuc") is not None:
+                    KONSOL.print("  son sonuc: {}".format(escape(zamanlayici.sonuc_metni(gorev["sonSonuc"]))))
+                if gorev.get("eylem"):
+                    KONSOL.print("  eylem: {}".format(escape(str(gorev["eylem"]))))
+                ozet = kayit.get("durum_dosyasi") or {}
+                if ozet.get("hata"):
+                    KONSOL.print("  durum dosyasi: {}".format(escape(str(ozet["hata"]))))
+                else:
+                    KONSOL.print("  durum dosyasi: {} dosya, {} bayt, guncelleme {}".format(
+                        ozet.get("dosya", 0), ozet.get("bayt", 0), escape(str(ozet.get("guncelleme") or "-"))))
+        KONSOL.print()
+        secim = _secim("Durum", ["Saglik kontrolu", "Geri"])
+        if secim == 0:
+            _saglik_ekrani()
+        else:
+            return
+
+
 def ana_menu():
     while True:
         KONSOL.clear()
-        KONSOL.print(Panel.fit("[bold cyan]DersMerkezi[/bold cyan]\nCok dersli icerik cekme araci", border_style="cyan"))
+        KONSOL.print(Panel.fit("[bold cyan]DersMerkezi[/bold cyan] surum {}\nCok dersli icerik cekme araci".format(__version__), border_style="cyan"))
         KONSOL.print()
-        secim = _secim("Ana menu", ["Dersleri Cek", "Dersler", "Ayarlar", "Otomasyon Ayarla", "Cikis"],
+        secim = _secim("Ana menu", ["Dersleri Cek", "Dersler", "Ayarlar", "Otomasyon Ayarla", "Durum / Saglik", "Cikis"],
                        "Yon tuslari + Enter")
-        if secim is None or secim == 4:
+        if secim is None or secim == 5:
             return 0
         if secim == 0:
             _cek_menu()
@@ -323,6 +437,8 @@ def ana_menu():
             ayarlar_ekrani()
         elif secim == 3:
             otomasyon_ekrani()
+        elif secim == 4:
+            durum_ekrani()
 
 
 def baslat():

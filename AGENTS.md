@@ -11,6 +11,7 @@ DersMerkezi, Windows masaüstünde çalışan Python + Rich tabanlı çok dersli
 * Plan belgesi: `belgeler/plan/2026-09-21-dersmerkezi-cli.md` (sonunda uygulama ve doğrulama kanıtları)
 * CLI geliştirme önerileri: `belgeler/plan/2026-09-21-cli-gelistirme-onerileri.md` (öncelikli maddeler, mimari kararlar ve kaynaklar; Sol denetiminden ONAY aldı, uygulanmadı)
 * Durum: M1-M5 uygulandı ve doğrulandı; bağımsız doğrulama turu ve 6 turluk Sol denetimi (toplam 19 bulgu kapatıldı, son turda ONAY) tamamlandı (sürüm 0.1.1). Görev tetiklemesi ve TUI iş mantığı test kapsamında doğrulandı; gerçek konsol görünümü ve üretim görevinin ilk takvimli koşusu kullanıcı tarafında teyit edilecek.
+* CLI genişletmesi (sürüm 0.1.2) uygulandı: mod/bayrak matrisi ve Türkçe doğrulama, `--json` kanal sözleşmesi, `--surum`, `--cek --kuru`, `--sil --onayla`, `--zorla/--zorla-md`, `--saglik/--ag/--ayrintili`, `--kilit-bekle`, `--sinir`, `--tetikle`, `--her-gun/--hafta-ici`, `--log`, `--oto-tamamlama` ve TUI eşliği; öneri planı Sol denetiminden ONAY aldı (tur 6). Uygulama sonrası Sol kod denetimi 3 turda tamamlandı (9 bulgu kapatıldı: kanal istisnası, kuru karantina, 200 MB guard, log yazılabilirlik/rotasyon, TUI salt-okunurluk ve eşlik, Rich kaçışları, üretilen betik); son turda ONAY alındı. Uçtan uca ve kapsam testi (2026-09-22): 374/374 kontrol (birim 164, fonksiyon kapsamı 150, uçtan uca 46, tetikleme 14), `trace` ile 131/131 fonksiyon kapsamı; gerçek görev yaşam döngüsü ve üretim görevi değişmezliği doğrulandı.
 * Kayıtlı ders: `dosya-organizasyonu` (`emirozturk/Dosya-Organizasyonu-2026`, desen `Hafta*.pdf`); görev `DersMerkezi_dosya-organizasyonu` haftalık PZT 09:00.
 * Eski PowerShell otomasyonu taşındı; eski `DosyaOrganizasyonu_HaftalikCek` görevi kaldırıldı.
 
@@ -24,13 +25,17 @@ DersMerkezi, Windows masaüstünde çalışan Python + Rich tabanlı çok dersli
 
 ## Dosya Haritası
 
-* `dersmerkezi.py`: Giriş noktası; CLI argümanları ve TUI başlatma.
-* `merkez/ayarlar.py`: `ayarlar.json` şeması (surum=1), doğrulama (slug/depo/dal/desen/saat/gün), atomik yazım, tek nesil yedek.
-* `merkez/indirici.py`: Contents API listeleme, akışlı indirme (`.part`), blob SHA-1 doğrulama, Markdown üretimi, durum şeması v2.
-* `merkez/zamanlayici.py`: PowerShell köprüsü (`gorev_kur`, `gorev_kaldir`, `gorev_sorgu`, `gorev_sil_genel`).
+* `dersmerkezi.py`: Giriş noktası; mod işleyicileri, CLI argümanları ve TUI başlatma.
+* `merkez/komut.py`: Argüman ayrıştırıcı, mod/bayrak matrisi doğrulaması, JSON çıktı sözleşmesi, Türkçe ayrıştırma hata eşlemesi.
+* `merkez/ayarlar.py`: `ayarlar.json` şeması (surum=1), doğrulama (slug/depo/dal/desen/saat/gün), `veri_dogrula`/`ders_dogrula` salt-okunur denetim, atomik yazım, tek nesil yedek.
+* `merkez/indirici.py`: Contents API listeleme (kota meta verisi), akışlı indirme (`.part`), blob SHA-1 doğrulama, Markdown üretimi, kuru ve zorlama modları, durum şeması v2.
+* `merkez/durum.py`: Ders/görev durum kayıtları ve ayrıntılı durum (CLI + TUI ortak).
+* `merkez/saglik.py`: Salt-okunur sağlık denetimi; `--ders`/`--ag` sınırlı ağ, `--ayrintili` sınırlı görev sorgusu.
+* `merkez/tamamlama.py`: PowerShell tamamlama betiği üretimi (`tamamlama/`, gitignore).
+* `merkez/zamanlayici.py`: PowerShell köprüsü (`gorev_kur`, `gorev_kaldir`, `gorev_sorgu`, `gorev_tetikle`, `gorev_yukle`, `gorev_sil`); sahiplik denetimi ve `ders_sil_guvenli`.
 * `merkez/tasima.py`: Eski otomasyonun güvenli taşınması (kanıt, manifest, doğrulama).
-* `merkez/arayuz.py`: Rich + msvcrt TUI (menü, çoklu seçim, canlı ilerleme).
-* `merkez/gunluk.py`: `gunluk.log` (UTF-8, 1 MB rotasyon) ve `Local\DersMerkezi` mutex.
+* `merkez/arayuz.py`: Rich + msvcrt TUI (menü, çoklu seçim, canlı ilerleme, kuru önizleme, Durum/Sağlık, tetikleme).
+* `merkez/gunluk.py`: `gunluk.log` (UTF-8, 1 MB rotasyon), doğrulanmış alternatif `--log` yolu ve `Local\DersMerkezi` mutex'i.
 * `merkez/ps/*.ps1`: Sabit PowerShell betikleri; Python bunları `-File` ve bağlanan parametrelerle çağırır.
 * `dersler/<slug>/`: İndirilen içerik ve `indirilenler.json`.
 * `belgeler/`: plan, referans (eski otomasyon kopyaları), gecmis (taşıma ve denetim kanıtları), kurulum.md, mimari.md.
@@ -81,13 +86,19 @@ Başarısız doğrulama geçmiş sayılmaz; hata sınıfı (izin/şema/ağ/zaman
 ## Bilinen Sınırlamalar
 
 * Görev Zamanlayıcı tetiklemesi test kapsamında doğrulandı: elle koşu, tek seferlik tetikleyici ve haftalık tetikleyici fiilen ateşlendi (`LastTaskResult=0`, `gunluk.log` satırı). İlk gözlemde tetiklenmemenin kök nedeni pil politikasıydı (`DisallowStartIfOnBatteries`); `gorev_kur.ps1` artık pilde çalışacak şekilde kayıt yapar ve üretim görevi elle tetiklemeyle fiilen koştu. Üretim görevinin kendi takvimli koşusu `gunluk.log` üzerinden teyit edilir.
-* TUI iş mantığı scriptli tuş girdisiyle (gezinme, çoklu seçim, çekme ekranı) doğrulandı; gerçek konsol etkileşimi ve görsel kalite kullanıcı tarafında.
+* TUI iş mantığı scriptli tuş girdisiyle (gezinme, çoklu seçim, çekme ekranı, kuru önizleme, Durum/Sağlık ekranı) doğrulandı; gerçek konsol etkileşimi ve görsel kalite kullanıcı tarafında.
+* `--tetikle` akışı kontrollü test göreviyle doğrulanır: başarı (LastTaskResult=0), hiç çalışmama (267011), kuyrukta kalma, sonlandırılma, hızlı tamamlanma ve sorgu hatası senaryoları; yalnız kanıtlanan sonuç kodları yorumlanır (diğerleri ham/hex). Üretim görevi bu testlerde değiştirilmez.
 * Antigravity/Gemini web rotası `web_evidence_invalid` verir; DeepSeek workspace yalnızca bu proje kökünde çalışır.
 
 ## Sık Kullanılan Komutlar
 
 * TUI: `baslat.cmd` veya masaüstü `DersMerkezi.bat`
 * Yeni ders: `python dersmerkezi.py --ekle --ad "<ad>" --depo <owner/repo> [--desen "<desen>"]`
-* Çekme: `python dersmerkezi.py --cek [--ders <slug>] --sessiz`
-* Görev kur: `python dersmerkezi.py --otomasyon-kur --ders <slug> --gunler PZT,CAR --saat 09:00`
-* Durum: `gunluk.log` ve `dersler/<slug>/indirilenler.json`
+* Çekme: `python dersmerkezi.py --cek [--ders <slug>] --sessiz` (kuru: `--kuru`, zorla: `--zorla`/`--zorla-md`, sınır: `--sinir <MB>`, bekleme: `--kilit-bekle <sn>`)
+* Görev kur: `python dersmerkezi.py --otomasyon-kur --ders <slug> --gunler PZT,CAR --saat 09:00` (kısayol: `--her-gun`/`--hafta-ici`, hemen dene: `--tetikle`)
+* Durum: `python dersmerkezi.py --durum [--ayrintili] [--json]`
+* Sağlık: `python dersmerkezi.py --saglik [--ders <slug>|--ag|--ayrintili] [--json]`
+* Sürüm/JSON: `python dersmerkezi.py --surum`; diğer JSON modları `--durum`, `--listele`, `--cek`, `--saglik`, `--oto-tamamlama`
+* Tamamlama: `python dersmerkezi.py --oto-tamamlama` → `tamamlama/dersmerkezi-tamamlama.ps1`
+* Silme (onaylı): `python dersmerkezi.py --sil --ders <slug> --onayla`
+* Günlükler: `gunluk.log` ve `dersler/<slug>/indirilenler.json`

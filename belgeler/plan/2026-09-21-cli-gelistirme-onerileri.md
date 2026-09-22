@@ -11,6 +11,43 @@ Mevcut CLI seçeneklerini ( `--listele`, `--ekle`, `--sil`, `--cek`, `--durum`, 
 
 Bu belge bir öneri listesidir; maddeler öncelik sırasına göre uygulanacaktır. Uygulama öncesi her madde için kabul kriteri ve doğrulama yöntemi aşağıda tanımlıdır.
 
+## Kapsam İlkesi: Arayüz Eşliği
+
+* Her kullanıcıya dönük özellik CLI arayüzüne eklenir: argparse seçeneği, mevcut `-h/--help` çıktısında Türkçe açıklama ve dokümantasyon (README, `belgeler/kurulum.md`) aynı dilimde tamamlanır; özellik yalnız iç işlev olarak bırakılmaz (`--yardim` diye ayrı bir bayrak eklenmez; mevcut yardım yüzeyi kullanılır).
+* Ortak işlev kuralı: CLI ve TUI aynı iş mantığı işlevlerini çağırır (ör. `indirici.indir_ders`, `zamanlayici.gorev_kur_guvenli`, `ayarlar.*`, yeni `merkez/saglik.py`); TUI hiçbir iş mantığını kopyalamaz. Ortak işlevler sonuç/hata sınıfı döndürür; 0/1/2 çıkış kodları yalnızca CLI süreç sonucudur, TUI bu sınıfları Türkçe ve kaçışlı iletiye dönüştürüp menü döngüsünü korur.
+* Salt CLI seçenekleri ve çıktı kipleri: etkileşimsiz veya makine tüketimli yüzeyler (`--json`, `--oto-tamamlama`, `--log`, `--sessiz`) TUI'ye taşınmaz; TUI'de bunların yokluğu varsayılan davranıştır. `--log` bir çıktı biçimi değil günlük hedefi seçeneğidir; dışlama ölçütü "makine tüketimli/etkileşimsiz yüzey" olmasıdır.
+* Arayüz eşliği, mevcut değişmezleri değiştirmez: TUI de aynı mutex, atomik yazım, sahiplik denetimi, Türkçe sunum ve `rich.markup.escape` kurallarına uyar.
+
+### Eşlik Listesi (bağlayıcı)
+
+| Plan maddesi | CLI seçeneği | TUI karşılığı | Sınıf | Ortak işlev |
+|---|---|---|---|---|
+| 1.1 JSON | `--json` | — (TUI tablo/panel gösterir) | Salt CLI | ortak serileştirme noktası |
+| 1.2 Kuru çekme | `--cek --kuru` | Dersleri Çek menüsünde "Önizleme (kuru çalışma)" | TUI eşli | `indirici.indir_ders(kuru=True)` |
+| 1.3 Silme onayı | `--sil --onayla` | Ders çıkar ekranındaki mevcut `Confirm` | TUI eşli | `ayarlar.ders_sil` + görev kaldırma zinciri |
+| 1.4 Kombinasyon doğrulaması | tüm seçenekler için `_dogrula` | Menüler geçersiz kombinasyon üretmez; ilke TUI akışlarında da geçerlidir | TUI eşli (dolaylı) | ortak `_dogrula(secenekler)` sonuç/hata sınıfı |
+| 1.5 Sürüm | `--surum` | Ana menü başlığında sürüm satırı | TUI eşli | `merkez.__version__` |
+| 2.1 Zorlama | `--zorla`, `--zorla-md` | Dersleri Çek onayında "Zorla yeniden indir/bağlam üret" | TUI eşli | `indirici.indir_ders(zorla=..., zorla_md=...)` |
+| 2.2 Sağlık | `--saglik` (+`--ders`, `--ag`) | Otomasyon/Durum menüsünde "Sağlık kontrolü" ekranı | TUI eşli | yeni `merkez/saglik.py` |
+| 2.3 Kilit bekleme | `--kilit-bekle` | Çekme başlatmadan önce kilit doluysa "Bekle/Atla" sorusu | TUI eşli | `gunluk.Kilit.al(bekle_ms=...)` |
+| 2.4 Ayrıntılı durum | `--durum --ayrintili` | Ana menü "Durum" ekranında ayrıntı satırları | TUI eşli | `zamanlayici.gorev_sorgu` + durum dosyası |
+| 3.1 Boyut sınırı | `--sinir` | — (TUI varsayılan 200 MB kullanır) | Gerekçeli salt CLI (ileri düzey) | `indirici.indir_ders(ust_boyut=...)` |
+| 3.2 Tetikleme | `--otomasyon-kur --tetikle` | Otomasyon detayında "Kur ve hemen dene" | TUI eşli | `zamanlayici.gorev_kur_guvenli` + tetikleme işlevi |
+| 3.3 Gün kısayolları | `--her-gun`, `--hafta-ici` | Gün seçim ekranında "Tümü"/"Hafta içi" düğmesi | TUI eşli | `ayarlar.gun_listesi_coz` |
+| 3.4 Günlük yolu | `--log` | — | Salt CLI | `gunluk` yol parametresi |
+| 3.5 Tamamlama | `--oto-tamamlama` | — | Salt CLI | `merkez/tamamlama.py` |
+
+### Arayüz Eşliği Kabul Kontrolleri (her dilimde çalıştırılabilir)
+
+1. `python dersmerkezi.py -h` çıktısında ilgili seçenek ve Türkçe açıklaması görünür.
+2. README ve `belgeler/kurulum.md` ilgili seçeneği içerir.
+3. Eşlik listesindeki TUI girdileri menüden erişilebilir; ekran metni Türkçe ve kaçışlıdır.
+4. CLI ve TUI adaptörleri aynı ortak işlevi eşdeğer girdilerle çağırır (kod incelemesi + birim kontrolü).
+5. Eşdeğer hatalar aynı sınıfa düşer; TUI menü döngüsünü korur, CLI 0/1/2 döner.
+6. Salt CLI seçenekleri TUI'de bulunmaz (negatif kontrol).
+
+Bir dilim, bu kontroller ve ilgili kabul kriterleri geçmeden "tamamlandı" sayılmaz.
+
 ## Öncelik 1 - Çekirdek Kazanımlar
 
 ### 1.1 `--json`
@@ -146,7 +183,7 @@ Bu belge bir öneri listesidir; maddeler öncelik sırasına göre uygulanacakt�
 5. Otomasyon dilimi: `--tetikle`, gün kısayolları, `--log`.
 6. Tamamlama dilimi: parser kaynaklı `--oto-tamamlama`, `.gitignore` girdisi.
 
-Her dilim bağımsız doğrulanabilir ve geri alınabilir; matris, JSON şeması ve dokümantasyon ilgili dilimle aynı değişiklikte güncellenir. Her dilimde `AGENTS.md` "Doğrulama Kapısı" uygulanır; girdi doğrulaması ve çıkış kodu davranışı değişen dilimlerde birim/akış kontrolleri yeniden koşulur ve Sol denetimine sunulur.
+Her dilim bağımsız doğrulanabilir ve geri alınabilir; matris, JSON şeması, dokümantasyon ve "Eşlik Listesi" gereği CLI yüzeyi ile TUI bağlantıları ve arayüz eşliği kabul kontrolleri ilgili dilimle aynı değişiklikte tamamlanır. Her dilimde `AGENTS.md` "Doğrulama Kapısı" uygulanır; girdi doğrulaması ve çıkış kodu davranışı değişen dilimlerde birim/akış kontrolleri yeniden koşulur ve Sol denetimine sunulur.
 
 ## Kapsam Dışı
 
@@ -400,3 +437,60 @@ Tur 2'de açık kalan altı bulgu; son ek kararlar, revize bayrak matrisi, risk 
 Toplam: 6 bulgu kapatıldı; açık bulgu ve kalan çelişki yoktur.
 
 SONUC: ONAY
+
+## Sol Denetim Turu 4 Sonucu
+
+* Değişmezlerle uyum — kapatıldı: İlke mutex, atomik yazım ve görev sahipliği denetimini gevşetmiyor; Türkçe sunum ile dinamik Rich metinlerinde `rich.markup.escape` kullanımını TUI için açıkça koruyor.
+* TUI kapsamının uygulanabilirliği — kapatıldı: Mevcut `merkez/arayuz.py` ders ekleme/çıkarma, çekme ve otomasyon menülerini barındırıyor; durum, sağlık ve kuru çalışma akışlarının aynı menü düzenine eklenmesi gerçekçi. CLI ve TUI'deki yinelenen silme, çekme ve otomasyon orkestrasyonunun ortak uygulama işlevlerine çıkarılması ilkeyle uyumludur.
+* Yardım yüzeyi — açık (orta): İlke her özellik için `--yardim` açıklaması istiyor, ancak mevcut argparse yalnız yerleşik `-h/--help` yüzeyini sağlıyor; planda `--yardim` seçeneği, matris kuralı veya kabul testi yok. Beklenen düzeltme: İfade mevcut `-h/--help` çıktısı olarak düzeltilmeli ya da `--yardim` Türkçe takma adı matrise, uygulama sırasına ve yardım testine açıkça eklenmelidir.
+* TUI eşliği sınırı — açık (orta): “TUI'de karşılığı olan” ve kapanıştaki “varsa TUI bağlantısı” ölçülebilir bir karar kuralı vermiyor; `--zorla`, `--zorla-md`, `--kilit-bekle`, `--sinir`, `--tetikle` ve `--ayrintili` seçeneklerinin hangilerinin mevcut çekme, otomasyon veya durum akışlarına taşınacağı belirsiz. Beklenen düzeltme: Her plan maddesini CLI seçeneği, TUI karşılığı veya gerekçeli CLI-özel sınıfı ve çağrılacak ortak işlevle eşleyen bağlayıcı bir eşlik listesi eklenmelidir.
+* Salt CLI sınıflandırması — açık (düşük): `--json`, `--oto-tamamlama`, `--log` ve `--sessiz` topluca “çıktılar” diye adlandırılmıştır; `--log` bir çıktı biçimi değil günlük hedefi seçeneğidir ve bu ifade yeni CLI-özel seçeneklerin hangi ölçütle dışlanacağını açıklamaz. Beklenen düzeltme: Başlık “salt CLI seçenekleri ve çıktı kipleri” olarak netleştirilmeli, dışlama ölçütü etkileşimsiz/makine tüketimli yüzey olarak tanımlanmalıdır.
+* Çıkış kodu sözleşmesi — açık (orta): TUI'nin “aynı çıkış kodu kurallarına” uyması mevcut sürekli menü modeliyle test edilebilir değildir; TUI işlem hatalarını ekranda gösterip menüye dönerken süreç genellikle 0 ile kapanır. Beklenen düzeltme: 0/1/2'nin yalnız CLI süreç sonucu olduğu, ortak işlevlerin başarı/çalışma hatası/kullanım hatası sınıfı döndürdüğü ve TUI'nin bu sınıfları Türkçe, kaçışlı iletiye dönüştürüp menü yaşam döngüsünü koruduğu yazılmalıdır.
+* Kabul kriterlerinin somutluğu — açık (yüksek): Genel “arayüz eşliği kontrolü eklenir” cümlesi, özellik bazlı kabul ölçütlerini değiştirmiyor ve dilimin eşlik tamamlanmadan kapanmasını nesnel olarak kanıtlamıyor. Beklenen düzeltme: Her dilimde argparse seçeneği ve yardım görünürlüğü, README ile `belgeler/kurulum.md` güncelliği, eşlik listesindeki TUI menü erişimi, CLI ve TUI adaptörlerinin aynı ortak işlevi eşdeğer girdilerle çağırması, eşdeğer sonuç/hata sınıfları ve salt CLI seçeneklerinin TUI'de bulunmaması için çalıştırılabilir kontroller zorunlu kılınmalıdır.
+
+SONUC: BULGULAR
+
+## Sol Denetim Turu 5 Sonucu
+
+* Yardım yüzeyi — kapatıldı: Kapsam ilkesi artık mevcut `-h/--help` çıktısını bağlayıcı yardım yüzeyi olarak tanımlıyor, Türkçe açıklamayı kabul kontrolüne bağlıyor ve ayrı bir `--yardim` bayrağı eklenmeyeceğini açıkça belirtiyor.
+* TUI eşliği sınırı — açık (orta): Bağlayıcı "Eşlik Listesi" seçenek taşıyan özelliklerin CLI, TUI, sınıf ve ortak işlev karşılıklarını büyük ölçüde somutlaştırıyor; ancak bağımsız plan maddesi 1.4 "Kombinasyon doğrulaması" listede yer almıyor. Bu nedenle "her plan maddesi" kapsamı eksiksiz sağlanmış değildir. Beklenen düzeltme: 1.4 için CLI seçeneği veya uygulanabilir yüzey, TUI karşılığı ya da gerekçeli salt CLI sınıfı ve kullanılacak ortak doğrulama/sonuç sınırı eşlik listesine eklenmelidir.
+* Salt CLI sınıflandırması — kapatıldı: Başlık "Salt CLI seçenekleri ve çıktı kipleri" olarak netleştirilmiş, dışlama ölçütü makine tüketimli veya etkileşimsiz yüzey olarak tanımlanmış ve `--log` açıkça günlük hedefi seçeneği olarak ayrıştırılmıştır.
+* TUI çıkış kodu sözleşmesi — kapatıldı: 0/1/2 yalnız CLI süreç sonucu olarak sınırlandırılmış; ortak işlevlerin sonuç/hata sınıfı döndürmesi ve TUI'nin bunları Türkçe, kaçışlı iletilere çevirerek menü döngüsünü koruması açıkça yazılmıştır.
+* Kabul kriterlerinin somutluğu — kapatıldı: Altı çalıştırılabilir kontrol yardım görünürlüğünü, README ve `belgeler/kurulum.md` güncelliğini, TUI menü erişimini, eşdeğer girdilerle aynı ortak işlev çağrısını, eşdeğer hata sınıflarını ve salt CLI seçeneklerinin TUI'de bulunmamasını kapsıyor; dilimin bu kontroller geçmeden tamamlanamayacağı belirtiliyor.
+
+Toplam: 4 bulgu kapatıldı; 1 orta bulgu açık kaldı.
+
+SONUC: BULGULAR
+
+## Sol Denetim Turu 6 Sonucu
+
+* TUI eşliği sınırı — kapatıldı: Bağlayıcı "Eşlik Listesi" artık 1.4 "Kombinasyon doğrulaması" maddesini içeriyor. Satır, CLI karşılığını tüm seçenekler için `_dogrula`, TUI karşılığını menülerin geçersiz kombinasyon üretmemesi ve ilkenin TUI akışlarında da geçerli olması, sınıfı "TUI eşli (dolaylı)", ortak işlevi ise ortak `_dogrula(secenekler)` sonuç/hata sınıfı olarak tanımlıyor. Böylece Tur 5'te beklenen CLI yüzeyi, TUI karşılığı, sınıflandırma ve ortak doğrulama/sonuç sınırı eksiksiz karşılanmıştır.
+
+Kalan çelişki yoktur.
+
+SONUC: ONAY
+
+
+## Uygulama ve Doğrulama Kanıtları (0.1.2)
+
+* Sürüm 0.1.2 uygulandı: `merkez/komut.py` (parser + `dogrula` matrisi + JSON/kanal sözleşmesi + Türkçe ayrıştırma hataları), `merkez/durum.py`, `merkez/saglik.py`, `merkez/tamamlama.py`, `merkez/ps/gorev_tetikle.ps1`; `indirici`, `zamanlayici`, `gunluk`, `ayarlar`, `arayuz` ve `dersmerkezi.py` güncellendi; `merkez/__init__.py` sürümü 0.1.2; `UA` sürümden türetilir.
+* Eşlik Listesi uygulandı: TUI kuru önizleme + zorlama onayı, kilit "Bekle/Atla", Durum/Sağlık ekranı, "Kur ve hemen dene", gün kısayolları, menüde sürüm; CLI ve TUI aynı ortak işlevleri çağırır (`indir_ders`, `gorev_kur_guvenli`, `gorev_tetikle`, `ders_sil_guvenli`, `durum.kayitlar`, `saglik.denetle`).
+* Kabul kontrolleri: `-h` tüm yeni seçenekleri listeler; README ve `belgeler/kurulum.md` güncellendi; salt CLI seçenekleri (`--json`, `--oto-tamamlama`, `--log`, `--sessiz`) TUI'de yok; eşdeğer hatalar aynı sınıflara düşer (kullanım 2 / çalışma 1).
+* Test kanıtları: 164 birim/akış + 14 tetikleme/sahiplik kontrolü geçti (Tur 1 kapanışlarıyla genişletildi) (geçici kopyada; repoya test dosyası eklenmedi); ayrıntılar `belgeler/plan/2026-09-21-dersmerkezi-cli.md` "CLI Genişletmesi 0.1.2 Kanıtları" bölümünde.
+* Doğrulama kapısı ve kontrollü test görevi senaryoları (başarı 0, süre aşımı/çalışıyor ham hex, temizlik) aynı bölümde kayıtlıdır.
+* Uçtan uca ve kapsam testi (2026-09-22): dört paket (164 birim/akış + 150 fonksiyon kapsamı + 46 uçtan uca + 14 tetikleme/sahiplik) 374/374 geçti; `trace` koşusunda 131/131 fonksiyon çağrıldı, ifade satırı kapsamı %81. Gerçek ağ ve Görev Zamanlayıcı ile tam yaşam döngüsü (ekle/listele/çek/kuru/log/kilit/görev kur-güncelle-tetikle-kaldır/sil, `--her-gun` 127 ve `--hafta-ici` 62 maskeleri, tamamlama PS sözdizimi) doğrulandı; üretim görevi Ready|0 korundu.
+* Sol kod denetimi: tur 1'de 6 orta + 2 düşük, tur 2'de 1 orta bulgu (rotasyon) açıldı ve kapatıldı; tur 3'te `SONUC: ONAY` alındı. Bulguların kapatma kararları yukarıdaki "Uygulama Revizyonu" bölümündedir.
+
+
+## Uygulama Revizyonu — Sol Uygulama Turu 1 Bulgularının Kapatılması (2026-09-22)
+
+Aşağıdaki kararlar uygulama sonrası Sol denetiminin (0.1.2) tur 1 bulgularını kapatır ve önceki çelişen ifadeleri geçersiz kılar.
+
+* U1 (orta, kanal politikası): Kapatıldı. Hata sayacı taşıyan mod sonuçları (çekme `dogrulama_hatasi`/`donusum_hatasi`, sağlık `sorunlar`) çalışma istisnası değildir; kanonik şemaları gereği JSON stdout'ta kalır ve exit 1 döner. Kanal politikasındaki "exit 1 → stdout boş" kuralı yalnızca istisna yolları (RuntimeError/IndirmeHatasi/OSError) içindir; bu durumda stdout boş, stderr'de JSON hata nesnesi + insan satırı yazılır. `--sessiz` yalnızca insan satırını bastırabilir; JSON hata nesnesi her durumda stderr'e yazılır.
+* U2 (orta, kuru mutasyonsuzluk): Kapatıldı. `ayarlar.yukle_salt`/`ayarlar.secili_dersler_salt` eklendi; `--cek --kuru` bozuk ayarda karantina yapmaz, exit 1 döner ve ayar dosyası değişmez (test kanıtı).
+* U3 (orta, 200 MB değişmezi): Kapatıldı. `indirici.indir_ders` girişinde `1 <= ust_boyut <= UST_BOYUT` fail-closed doğrulaması yapılır; CLI dışı çağrı yolları da 200 MB üstünü açamaz (test kanıtı).
+* U4 (orta, `--log` yazılabilirliği): Kapatıldı. `gunluk.log_yolu_ayarla` hedefi append modunda açıp yazılabilirliği kanıtlar (OSError → exit 1); özel günlükte yazım/rotasyon hatası OSError olarak yükseltilir (varsayılan günlükte fail-closed atlama korunur). Kök dışı/dizin/reparse doğrulama hataları exit 2 kalır. Tur 2 bulgusu: `_rotasyon` hatası da özel günlük hedefinde `OSError` olarak yükseltilir; varsayılan günlükte fail-closed atlama korunur (test: kilitli `.old` → exit 1, hedef dosyalar değişmeden korunur).
+* U5 (orta, TUI sağlık salt-okunurluğu): Kapatıldı. TUI durum ekranı `durum.kayitlar_salt` kullanır; bozuk ayarda karantina yapılmaz ve "Sağlık kontrolü" erişilebilir kalır (test kanıtı).
+* U6 (orta, eşlik listesi): Kapatıldı. TUI çekme akışına "Zorla yeniden indir" ve "Yalnız bağlamı yenile" seçenekleri, sağlık ekranına "Tek ders için ağ kontrolü" eklendi; CLI ve TUI aynı ortak işlevleri eşdeğer girdilerle çağırır (test kanıtı).
+* U7 (düşük, Rich kaçışı): Kapatıldı. Otomasyon detayındaki gün/saat/görev durumu ve görev kurulum satırları `rich.markup.escape` ile kaçışlanır; enjeksiyon testi eklendi.
+* U8 (düşük, üretilen betik): Kapatıldı. Tamamlama betiğindeki yorum satırı kaldırıldı; üretim parser kaynaklı ve atomik kalır (test kanıtı).

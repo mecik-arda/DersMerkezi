@@ -37,6 +37,8 @@ GUNLER = {
     "PAZ": "Sunday",
 }
 GUN_ADLARI = tuple(GUNLER.values())
+HER_GUN = ("PZT", "SAL", "CAR", "PER", "CUM", "CMT", "PAZ")
+HAFTA_ICI = ("PZT", "SAL", "CAR", "PER", "CUM")
 
 
 def bos_veri():
@@ -165,6 +167,47 @@ def _json_yaz(yol, veri):
         kilit.birak()
 
 
+def veri_dogrula(veri):
+    if not isinstance(veri, dict):
+        return False, "kök nesne değil"
+    if veri.get("surum") not in (None, SURUM):
+        return False, "şema sürümü desteklenmiyor: {}".format(veri.get("surum"))
+    if not isinstance(veri.get("dersler"), dict):
+        return False, "dersler bölümü yok"
+    return True, ""
+
+
+def ders_dogrula(kimlik, kayit):
+    if not SLUG_DESENI.match(kimlik or "") or not 2 <= len(kimlik) <= 40:
+        return "geçersiz ders kimliği: {}".format(kimlik)
+    if not isinstance(kayit, dict):
+        return "ders kaydı nesne değil"
+    gecerli, neden = ad_gecerli(str(kayit.get("ad", "")))
+    if not gecerli:
+        return "geçersiz ad: {}".format(neden)
+    try:
+        depo_coz(str(kayit.get("depo", "")))
+    except ValueError as hata:
+        return "geçersiz depo: {}".format(hata)
+    dal = str(kayit.get("dal", ""))
+    if not DAL_DESENI.match(dal) or ".." in dal:
+        return "geçersiz dal: {}".format(dal)
+    desen = str(kayit.get("desen", ""))
+    if not desen or len(desen) > 64 or DESEN_YASAK.search(desen) or "/" in desen or "\\" in desen:
+        return "geçersiz desen: {}".format(desen)
+    oto = kayit.get("otomasyon") or {}
+    if not isinstance(oto, dict):
+        return "otomasyon ayarı nesne değil"
+    saat = str(oto.get("saat", "09:00") or "09:00")
+    if not saat_gecerli(saat):
+        return "geçersiz saat: {}".format(saat)
+    try:
+        gun_listesi_coz(oto.get("gunler") or ["PZT"])
+    except ValueError as hata:
+        return "geçersiz gün listesi: {}".format(hata)
+    return None
+
+
 def yukle():
     if not AYAR_YOLU.exists():
         return bos_veri()
@@ -181,6 +224,26 @@ def yukle():
         _bozuk_yedekle(AYAR_YOLU)
         return bos_veri()
     return veri
+
+
+def yukle_salt():
+    if not AYAR_YOLU.exists():
+        return bos_veri(), None
+    try:
+        veri = json.loads(AYAR_YOLU.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None, "ayarlar.json okunamadı veya bozuk"
+    gecerli, neden = veri_dogrula(veri)
+    if not gecerli:
+        return None, "ayarlar.json geçersiz: {}".format(neden)
+    return veri, None
+
+
+def secili_dersler_salt():
+    veri, hata = yukle_salt()
+    if hata:
+        raise RuntimeError("{} (kuru çalışmada ayarlar değiştirilmedi)".format(hata))
+    return [k for k, d in veri["dersler"].items() if d.get("secili", True)]
 
 
 def kaydet(veri):
