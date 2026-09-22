@@ -6,22 +6,22 @@ Bu dosya, bu projede çalışan tüm kod ajanları için bağlayıcı bağlam ve
 
 DersMerkezi, Windows masaüstünde çalışan Python + Rich tabanlı çok dersli içerik çekme aracıdır. GitHub depolarındaki haftalık ders içeriklerini (ör. `Hafta 1.pdf`) indirir, Git blob SHA-1 ile doğrular, pypdf ile Markdown bağlamı üretir ve ders bazında haftalık Windows Görev Zamanlayıcı görevleri kurar.
 
-* Proje kökü: `C:\Users\ardam\Desktop\Yazılım_Siber\DersMerkezi`
-* Private depo: `https://github.com/mecik-arda/DersMerkezi` (tüm içerik Türkçe; sürüm kontrolü dışı: `dersler/`, `gunluk.log`, `ayarlar.json`, geçici/yedek dosyalar).
+* Proje kökü: yerel çalışma kopyası (bu depo).
+* Depo: `https://github.com/mecik-arda/DersMerkezi` (lisans: Apache-2.0) (tüm içerik Türkçe; sürüm kontrolü dışı: `dersler/`, `gunluk.log`, `ayarlar.json`, geçici/yedek dosyalar).
 * Plan belgesi: `belgeler/plan/2026-09-21-dersmerkezi-cli.md` (sonunda uygulama ve doğrulama kanıtları)
 * CLI geliştirme önerileri: `belgeler/plan/2026-09-21-cli-gelistirme-onerileri.md` (öncelikli maddeler, mimari kararlar ve kaynaklar; Sol denetimlerinden ONAY aldı; 0.1.2 ve 0.1.3 dilimleri uygulandı)
 * Durum: M1-M5 uygulandı ve doğrulandı; bağımsız doğrulama turu ve 6 turluk Sol denetimi (toplam 19 bulgu kapatıldı, son turda ONAY) tamamlandı (sürüm 0.1.1). Görev tetiklemesi ve TUI iş mantığı test kapsamında doğrulandı; gerçek konsol görünümü ve üretim görevinin ilk takvimli koşusu kullanıcı tarafında teyit edilecek.
-* CLI genişletmesi (sürüm 0.1.2) uygulandı: mod/bayrak matrisi ve Türkçe doğrulama, `--json` kanal sözleşmesi, `--surum`, `--cek --kuru`, `--sil --onayla`, `--zorla/--zorla-md`, `--saglik/--ag/--ayrintili`, `--kilit-bekle`, `--sinir`, `--tetikle`, `--her-gun/--hafta-ici`, `--log`, `--oto-tamamlama` ve TUI eşliği; öneri planı Sol denetiminden ONAY aldı (tur 6). Uygulama sonrası Sol kod denetimi 3 turda tamamlandı (9 bulgu kapatıldı: kanal istisnası, kuru karantina, 200 MB guard, log yazılabilirlik/rotasyon, TUI salt-okunurluk ve eşlik, Rich kaçışları, üretilen betik); son turda ONAY alındı. Ayar dilimi (0.1.3) eklendi: `--ayarlar` salt-okunur görünüm ve `--ayarlar --ders X --secili evet|hayir` ile güvenli seçim değişikliği; TUI aynı ortak işlevi kullanır. Sol denetimi 3 turda ONAY aldı (5 bulgu kapatıldı). Uçtan uca ve kapsam testi (2026-09-22): 374/374 kontrol (birim 164, fonksiyon kapsamı 150, uçtan uca 46, tetikleme 14), `trace` ile 131/131 fonksiyon kapsamı; gerçek görev yaşam döngüsü ve üretim görevi değişmezliği doğrulandı.
+* CLI genişletmesi (sürüm 0.1.2) uygulandı: mod/bayrak matrisi ve Türkçe doğrulama, `--json` kanal sözleşmesi, `--surum`, `--cek --kuru`, `--sil --onayla`, `--zorla/--zorla-md`, `--saglik/--ag/--ayrintili`, `--kilit-bekle`, `--sinir`, `--tetikle`, `--her-gun/--hafta-ici`, `--log`, `--oto-tamamlama` ve TUI eşliği; öneri planı Sol denetiminden ONAY aldı (tur 6). Uygulama sonrası Sol kod denetimi 3 turda tamamlandı (9 bulgu kapatıldı: kanal istisnası, kuru karantina, 200 MB guard, log yazılabilirlik/rotasyon, TUI salt-okunurluk ve eşlik, Rich kaçışları, üretilen betik); son turda ONAY alındı. Ayar dilimi (0.1.3) eklendi: `--ayarlar` salt-okunur görünüm ve `--ayarlar --ders X --secili evet|hayir` ile güvenli seçim değişikliği; TUI aynı ortak işlevi kullanır. Sol denetimi 3 turda ONAY aldı (5 bulgu kapatıldı). Gerçek konsol/TUI ve takvim teyitleri 0.1.4'te tamamlandı. Public hazırlığı (0.1.5): Apache-2.0 lisansı (`LICENSE`, `NOTICE`), "private" ifadelerinin kaldırılması ve kullanıcıya dönük belgelerde kişisel yolların genelleştirilmesi. Uçtan uca ve kapsam testi (2026-09-22): 374/374 kontrol (birim 164, fonksiyon kapsamı 150, uçtan uca 46, tetikleme 14), `trace` ile 131/131 fonksiyon kapsamı; gerçek görev yaşam döngüsü ve üretim görevi değişmezliği doğrulandı.
 * Kayıtlı ders: `dosya-organizasyonu` (`emirozturk/Dosya-Organizasyonu-2026`, desen `Hafta*.pdf`); görev `DersMerkezi_dosya-organizasyonu` haftalık PZT 09:00.
 * Eski PowerShell otomasyonu taşındı; eski `DosyaOrganizasyonu_HaftalikCek` görevi kaldırıldı.
 
 ## Ortam Gerçekleri
 
-* Windows 11, PowerShell 5.1, Python 3.13.9 (Anaconda: `C:\Users\ardam\anaconda3\python.exe`; `pythonw.exe` mevcut).
+* Windows 11, PowerShell 5.1, Python 3.13.9 (Anaconda; `pythonw.exe` mevcut).
 * Kurulu paketler: rich 14.2.0, requests 2.32.5, pypdf 6.12.2.
 * Konsol kod sayfası gözlemi 857; başlatıcılar `chcp 65001` kullanır.
 * Uzun yol desteği açık (LongPathsEnabled=1).
-* Subagent köprüsü izinli kökü: `C:\Users\ardam\Desktop\Yazılım_Siber` (bu proje izinlidir; eski proje klasörü değildir).
+* Subagent köprüsü izinli kökü: projenin üst klasörü (bu proje izinlidir; eski proje klasörü değildir).
 
 ## Dosya Haritası
 
@@ -60,7 +60,7 @@ DersMerkezi, Windows masaüstünde çalışan Python + Rich tabanlı çok dersli
 * Markdown bağlamı durum kaydındaki `md_sha`/`md_boyut` ile doğrulanır; md eksik veya bozuksa yeniden üretilir.
 * Git blob SHA'sı `blob <boyut>\0<veri>` biçiminde streaming hesaplanır; SHA doğrulanmadan dosya nihai adına taşınmaz.
 * Markdown şablonu korunur: başlık, kaynak/SHA/tarih/sayfa satırları, `---`, `## Sayfa N`, OCR uyarısı.
-* Eski proje klasörü `C:\Users\ardam\Desktop\dersler3-1\Dosya_Organizasyonu` yalnızca referanstır; üzerinde değişiklik yapılmaz.
+* Eski proje klasörü (yerel referans; kodda `tasima.ESKI_KOK`) yalnızca referanstır; üzerinde değişiklik yapılmaz.
 * `--tasima --onayla` bir kez çalıştırıldı (eski görev kaldırıldı); normal koşullarda yeniden çalıştırılmaz; `--tasima --kuru` çıktısı `tasima-dogrulama-kuru.txt` dosyasına yazılır ve gerçek kanıtı ezmez.
 * Görev adı şeması: `DersMerkezi_<slug>`; zamanlanmış koşular `pythonw.exe` ile ve `--otomatik --ders <slug> --sessiz` argümanlarıyla çalışır.
 * Ders kaydı silinirken varsa `DersMerkezi_<slug>` görevi de kaldırılır; görev kaldırılamazsa ders silinmez.
@@ -85,8 +85,8 @@ Başarısız doğrulama geçmiş sayılmaz; hata sınıfı (izin/şema/ağ/zaman
 
 ## Bilinen Sınırlamalar
 
-* Görev Zamanlayıcı tetiklemesi test kapsamında doğrulandı: elle koşu, tek seferlik tetikleyici ve haftalık tetikleyici fiilen ateşlendi (`LastTaskResult=0`, `gunluk.log` satırı). İlk gözlemde tetiklenmemenin kök nedeni pil politikasıydı (`DisallowStartIfOnBatteries`); `gorev_kur.ps1` artık pilde çalışacak şekilde kayıt yapar ve üretim görevi elle tetiklemeyle fiilen koştu. Üretim görevinin kendi takvimli koşusu `gunluk.log` üzerinden teyit edilir.
-* TUI iş mantığı scriptli tuş girdisiyle (gezinme, çoklu seçim, çekme ekranı, kuru önizleme, Durum/Sağlık ekranı) doğrulandı; gerçek konsol etkileşimi ve görsel kalite kullanıcı tarafında.
+* Görev Zamanlayıcı tetiklemesi test kapsamında doğrulandı: elle koşu, tek seferlik tetikleyici ve haftalık tetikleyici fiilen ateşlendi (`LastTaskResult=0`, `gunluk.log` satırı). İlk gözlemde tetiklenmemenin kök nedeni pil politikasıydı (`DisallowStartIfOnBatteries`); `gorev_kur.ps1` artık pilde çalışacak şekilde kayıt yapar ve üretim görevi elle tetiklemeyle fiilen koştu. Üretim görevinin kendi takvimli koşusu `gunluk.log` üzerinden teyit edilir; yapılandırma ve test göreviyle takvim ateşlemesi 2026-09-22'de doğrulandı (sonuç 0).
+* TUI iş mantığı scriptli tuş girdisiyle (gezinme, çoklu seçim, çekme ekranı, kuru önizleme, Durum/Sağlık ekranı) doğrulandı; ayrıca gerçek konsolda (yeni pencere, chcp 65001) menü/Durum/Sağlık/çıkış akışı ve karakter kod noktaları doğrulandı (0.1.4).
 * `--tetikle` akışı kontrollü test göreviyle doğrulanır: başarı (LastTaskResult=0), hiç çalışmama (267011), kuyrukta kalma, sonlandırılma, hızlı tamamlanma ve sorgu hatası senaryoları; yalnız kanıtlanan sonuç kodları yorumlanır (diğerleri ham/hex). Üretim görevi bu testlerde değiştirilmez.
 * Antigravity/Gemini web rotası `web_evidence_invalid` verir; DeepSeek workspace yalnızca bu proje kökünde çalışır.
 

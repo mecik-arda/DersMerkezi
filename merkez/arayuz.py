@@ -37,12 +37,14 @@ def _bekle_enter():
             return
 
 
-def _secim(baslik, secenekler, aciklama=None):
+def _secim(baslik, secenekler, aciklama=None, ust=None):
     imlec = 0
     KONSOL.show_cursor(False)
     try:
         while True:
             KONSOL.clear()
+            if ust is not None:
+                KONSOL.print(ust)
             KONSOL.print(Panel.fit("[bold]{}[/bold]".format(baslik), border_style="cyan"))
             if aciklama:
                 KONSOL.print("[dim]{}[/dim]".format(aciklama))
@@ -230,9 +232,8 @@ def _ders_sil_ekrani(veri):
 def dersler_ekrani():
     while True:
         veri = ayarlar.yukle()
-        KONSOL.clear()
-        KONSOL.print(_ders_tablosu(veri))
-        secim = _secim("Dersler", ["Yeni ders ekle", "Ders cikar", "Geri"])
+        tablo = _ders_tablosu(veri)
+        secim = _secim("Dersler", ["Yeni ders ekle", "Ders cikar", "Geri"], ust=tablo)
         if secim is None or secim == 2:
             return
         if secim == 0:
@@ -278,13 +279,12 @@ def _otomasyon_detay(kimlik):
                 durum = "kayitli ({})".format(sorgu.get("durum", ""))
         except RuntimeError:
             durum = "sorgulanamadi"
-        KONSOL.clear()
-        KONSOL.print("[bold]{}[/bold]".format(escape(str(ders.get("ad", kimlik)))))
-        KONSOL.print("Tetik: {} {}".format(
-            escape(",".join(str(gun) for gun in oto.get("gunler", []))) or "-", escape(str(oto.get("saat", "")))))
-        KONSOL.print("Gorev durumu: {}".format(escape(str(durum))))
-        KONSOL.print()
-        secim = _secim("Otomasyon", ["Kur / guncelle", "Kur ve hemen dene", "Kaldir", "Geri"])
+        ust = "[bold]{}[/bold]\nTetik: {} {}\nGorev durumu: {}".format(
+            escape(str(ders.get("ad", kimlik))),
+            escape(",".join(str(gun) for gun in oto.get("gunler", []))) or "-",
+            escape(str(oto.get("saat", ""))),
+            escape(str(durum)))
+        secim = _secim("Otomasyon", ["Kur / guncelle", "Kur ve hemen dene", "Kaldir", "Geri"], ust=ust)
         if secim is None or secim == 3:
             return
         if secim in (0, 1):
@@ -383,8 +383,8 @@ def _saglik_ekrani():
     renkler = {"ok": "green", "uyari": "yellow", "sorun": "red"}
     for kontrol in sonuc["kontroller"]:
         renk = renkler.get(kontrol["durum"], "white")
-        KONSOL.print("[{}]{} {}: {}[/{}]".format(
-            renk, renk, escape(str(kontrol["ad"])), escape(str(kontrol["mesaj"])), renk))
+        KONSOL.print("[{}]{}: {}[/{}]".format(
+            renk, escape(str(kontrol["ad"])), escape(str(kontrol["mesaj"])), renk))
     if sonuc["kota"]:
         KONSOL.print("Kota: limit={} kalan={} sifirla={}".format(
             sonuc["kota"].get("limit"), sonuc["kota"].get("kalan"), sonuc["kota"].get("sifirla")))
@@ -396,32 +396,31 @@ def _saglik_ekrani():
 
 def durum_ekrani():
     while True:
-        KONSOL.clear()
         kayitlar, hata = durum.kayitlar_salt(ayrintili=True)
+        satirlar = []
         if hata:
-            KONSOL.print("[red]Ayarlar okunamadi: {}[/red]".format(escape(hata)))
-            KONSOL.print("[dim]Saglik kontrolu bozuk ayarlarla da calisir.[/dim]")
+            satirlar.append("[red]Ayarlar okunamadi: {}[/red]".format(escape(hata)))
+            satirlar.append("[dim]Saglik kontrolu bozuk ayarlarla da calisir.[/dim]")
         elif not kayitlar:
-            KONSOL.print("[yellow]Kayitli ders yok.[/yellow]")
+            satirlar.append("[yellow]Kayitli ders yok.[/yellow]")
         else:
-            KONSOL.print("Ders sayisi: {}".format(len(kayitlar)))
+            satirlar.append("Ders sayisi: {}".format(len(kayitlar)))
             for kayit in kayitlar:
                 gorev = kayit["otomasyon"]["gorev"]
-                KONSOL.print("{}: gorev={}".format(escape(str(kayit["kimlik"])), escape(str(gorev["durum"]))))
+                satirlar.append("{}: gorev={}".format(escape(str(kayit["kimlik"])), escape(str(gorev["durum"]))))
                 if gorev.get("sonCalisma"):
-                    KONSOL.print("  son calisma: {}".format(escape(str(gorev["sonCalisma"]))))
+                    satirlar.append("  son calisma: {}".format(escape(str(gorev["sonCalisma"]))))
                 if gorev.get("sonSonuc") is not None:
-                    KONSOL.print("  son sonuc: {}".format(escape(zamanlayici.sonuc_metni(gorev["sonSonuc"]))))
+                    satirlar.append("  son sonuc: {}".format(escape(zamanlayici.sonuc_metni(gorev["sonSonuc"]))))
                 if gorev.get("eylem"):
-                    KONSOL.print("  eylem: {}".format(escape(str(gorev["eylem"]))))
+                    satirlar.append("  eylem: {}".format(escape(str(gorev["eylem"]))))
                 ozet = kayit.get("durum_dosyasi") or {}
                 if ozet.get("hata"):
-                    KONSOL.print("  durum dosyasi: {}".format(escape(str(ozet["hata"]))))
+                    satirlar.append("  durum dosyasi: {}".format(escape(str(ozet["hata"]))))
                 else:
-                    KONSOL.print("  durum dosyasi: {} dosya, {} bayt, guncelleme {}".format(
+                    satirlar.append("  durum dosyasi: {} dosya, {} bayt, guncelleme {}".format(
                         ozet.get("dosya", 0), ozet.get("bayt", 0), escape(str(ozet.get("guncelleme") or "-"))))
-        KONSOL.print()
-        secim = _secim("Durum", ["Saglik kontrolu", "Geri"])
+        secim = _secim("Durum", ["Saglik kontrolu", "Geri"], ust="\n".join(satirlar))
         if secim == 0:
             _saglik_ekrani()
         else:
@@ -431,10 +430,8 @@ def durum_ekrani():
 def ana_menu():
     while True:
         KONSOL.clear()
-        KONSOL.print(Panel.fit("[bold cyan]DersMerkezi[/bold cyan] surum {}\nCok dersli icerik cekme araci".format(__version__), border_style="cyan"))
-        KONSOL.print()
         secim = _secim("Ana menu", ["Dersleri Cek", "Dersler", "Ayarlar", "Otomasyon Ayarla", "Durum / Saglik", "Cikis"],
-                       "Yon tuslari + Enter")
+                       "Yon tuslari + Enter | surum {}".format(__version__))
         if secim is None or secim == 5:
             return 0
         if secim == 0:

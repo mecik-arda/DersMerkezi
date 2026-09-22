@@ -5,7 +5,7 @@ Bu belge DersMerkezi'nin kurulumunu, ilk kullanımını ve sorun giderme adımla
 ## Gereksinimler
 
 * Windows 10/11 (uzun yol desteği önerilir; bu makinede `LongPathsEnabled=1`).
-* Python 3.13 (Anaconda dağıtımı bu makinede kullanılmaktadır: `C:\Users\ardam\anaconda3\python.exe`).
+* Python 3.13 (bu makinede Anaconda dağıtımı kullanılır).
 * Python paketleri: `rich`, `requests`, `pypdf`.
 
 ```powershell
@@ -16,7 +16,7 @@ python -m pip install rich requests pypdf
 
 ## Kurulum
 
-1. Depoyu klonlayın (private):
+1. Depoyu klonlayın:
 
 ```powershell
 git clone https://github.com/mecik-arda/DersMerkezi.git
@@ -28,7 +28,7 @@ git clone https://github.com/mecik-arda/DersMerkezi.git
 .\baslat.cmd
 ```
 
-Masaüstü kısayolu `C:\Users\ardam\Desktop\DersMerkezi.bat` dosyası proje içindeki `baslat.cmd` dosyasını çağırır; `chcp 65001` ile UTF-8 kod sayfasına geçilir.
+Masaüstü kısayolu `%USERPROFILE%\Desktop\DersMerkezi.bat` dosyası proje içindeki `baslat.cmd` dosyasını çağırır; `chcp 65001` ile UTF-8 kod sayfasına geçilir.
 
 ## İlk Kullanım
 
@@ -171,3 +171,7 @@ Beklenen: derleme hatasız; çekme `atlanan=1` ile 0 kodu döner; durum çıktı
 * `gunluk.log`: UTF-8, 1 MB üzeri `.old` rotasyonu; `[tarih] [SEVİYE] mesaj` biçimindedir.
 * `dersler/<kimlik>/indirilenler.json`: durum şeması sürüm 2 (`sha`, `boyut`, `indirildi`, `md`, `kaynak_url`, `md_sha`, `md_boyut`, `md_uretildi`).
 * `ayarlar.json`: ders kayıtları ve otomasyon ayarları (şema sürüm 1); `.gitignore` dışındadır.
+
+## Lisans
+
+Apache License 2.0; ayrıntılar `LICENSE` ve `NOTICE` dosyalarında.

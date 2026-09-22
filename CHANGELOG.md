@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.1.5 - 2026-09-22
+
+### Eklendi
+
+* Apache-2.0 lisansı (`LICENSE`) ve `NOTICE` dosyası; README ve kurulum rehberine lisans bölümü.
+
+### Değişti
+
+* Public hazırlığı: "private depo" ifadeleri kaldırıldı; kullanıcıya dönük belgelerde (README, `belgeler/kurulum.md`, `AGENTS.md`, `CHANGELOG.md`) kişisel mutlak yollar genelleştirildi; tarihsel kanıt dosyaları (belgeler/gecmis) değiştirilmedi.
+
+### Doğrulama
+
+* Son kod haliyle 418/418 kontrol (204 birim/akış + 153 fonksiyon kapsamı + 47 uçtan uca + 14 tetikleme/sahiplik) geçti. Gerçek proje kapısı: `compileall` exit 0; `--surum` → `DersMerkezi 0.1.5`; `--cek --ders dosya-organizasyonu --sessiz` exit 0; `--durum` (Ready); `--ayarlar --json` ve `--saglik --ders dosya-organizasyonu --json` exit 0. Secret taraması (içerik + geçmiş) temiz; izlenen dosyalarda hassas dosya yok.
+
+## 0.1.4 - 2026-09-22
+
+### Düzeltildi
+
+* TUI ana menüsünde sürüm satırı kalıcı hale getirildi: menü ekranı kendini temizlediği için önceki sürüm paneli görünmüyordu; sürüm bilgisi menü açıklama satırına taşındı (gerçek konsol doğrulamasında saptandı).
+
+### Doğrulama
+
+* Gerçek konsolda (yeni pencere, `chcp 65001`) TUI ana menü, Durum listesi, Sağlık akışı ve çıkış doğrulandı; konsol tamponundaki karakter kod noktaları birebir denetlendi (ü=U+00FC, ş=U+015F, ─=U+2500); bozuk karakter yok. Tampon okuma bu ortamda yalnız ekranın bir bölümünü yakalayabildiği için satır satır görsel inceleme yerine kod noktası + akış kanıtı kullanıldı.
+* Doğrulama kapısı (0.1.4 son kod): `compileall` exit 0; geçici kopyada son kod haliyle 418/418 kontrol (204 birim/akış + 153 fonksiyon kapsamı + 47 uçtan uca + 14 tetikleme/sahiplik) geçti; gerçek proje kapısı: `--cek --ders dosya-organizasyonu --sessiz` exit 0 (`atlanan=2`), `--surum` 0.1.4, `--ayarlar --json`, `--durum` (Ready) ve `--saglik --ders dosya-organizasyonu --json` exit 0; üretim görevi değişmedi.
+* Üretim görevi takvimi teyit edildi: XML tetikleyicisi (haftalık Pazartesi 09:00, seri başlangıcı 21.09.2026), `MultipleInstances=IgnoreNew`, `StartWhenAvailable=true`, pilde çalışma, 30 dk zaman aşımı, `pythonw.exe` ve dondurulmuş argümanlar; `NextRunTime=28.09.2026 09:00`, `LastTaskResult=0`. Ayrıca test göreviyle gerçek takvim tetiklemesi ateşlendi (20:35:00, `LastTaskResult=0`, `gunluk.log` satırı) ve test görevi/kaydı temizlendi.
+
 ## 0.1.3 - 2026-09-22
 
 ### Eklendi
@@ -52,7 +78,7 @@
 
 * Türkçe dökümantasyon: `belgeler/kurulum.md` (kurulum, kullanım, sorun giderme) ve `belgeler/mimari.md` (modül haritası, veri akışı, şemalar, değişmezler); README döküman bağlantıları ve depo bilgisiyle güncellendi.
 * Sürüm kontrolü dosyaları: `.gitignore` (dersler/, günlük, ayarlar ve geçici dosyalar hariç) ve `.gitattributes` (UTF-8/LF normalizasyonu, ikili dosyalar).
-* Private GitHub deposu oluşturuldu: <https://github.com/mecik-arda/DersMerkezi>
+* GitHub deposu oluşturuldu: <https://github.com/mecik-arda/DersMerkezi>
 
 ### Düzeltildi
 
@@ -87,7 +113,7 @@
 * Python + Rich tabanlı DersMerkezi CLI/TUI: ders ekleme/çıkarma/listeleme, çekilecek ders işaretleme, canlı animasyonlu çekme ekranı, otomasyon ekranı.
 * `merkez/` çekirdek modülleri: `ayarlar`, `indirici`, `zamanlayici`, `arayuz`, `gunluk`, `tasima` ve sabit PowerShell betikleri (`merkez/ps/`).
 * Headless komutlar: `--ekle`, `--sil`, `--listele`, `--cek`, `--durum`, `--otomasyon-kur`, `--otomasyon-kaldir`, `--tasima [--kuru] [--onayla]`, `--otomatik`, `--sessiz`.
-* Masaüstü başlatıcı `C:\Users\ardam\Desktop\DersMerkezi.bat` ve proje içi `baslat.cmd`.
+* Masaüstü başlatıcı `%USERPROFILE%\Desktop\DersMerkezi.bat` ve proje içi `baslat.cmd`.
 * Güvenlik ve dayanıklılık: girdi doğrulama, atomik yazım (fsync + os.replace), `Local\DersMerkezi` mutex, Git blob SHA-1 doğrulaması, enjeksiyon sertleştirmesi, hata kategorileri.
 * `AGENTS.md`, `CLAUDE.md`, `README.md` ve plan belgesi.
 

@@ -193,7 +193,14 @@ Sol danışma kararı (2026-09-22) doğrultusunda tek dilimde uygulanır.
 * Doğrulama: matris çiftleri, JSON şeması, yan etkisizlik anlık görüntüsü, bozuk ayar, kilit senaryosu, TUI ortak işlev kontrolü.
 * Risk: Düşük; yalnızca `secili` alanı değişir, görev eylemi ve otomasyon ayarları değişmez.
 * Sol denetimi (0.1.3): `belgeler/gecmis/sol-denetim-2026-09-22-0.1.3.md`; tur 1'de 3 orta + 2 düşük bulgu açıldı ve kapatıldı, tur 3'te `SONUC: ONAY` alındı.
-* Kanıt (2026-09-22): geçici kopyada 418/418 kontrol (204 birim/akış + 153 fonksiyon kapsamı + 47 uçtan uca + 14 tetikleme/sahiplik); `trace` koşusunda 133/133 fonksiyon çağrıldı, ifade satırı kapsamı %81. Gerçek proje kapısı: `--ayarlar` ve `--ayarlar --ders ... --json` salt-okunur; `--cek --sessiz` atlanan=1; `--durum` Ready; üretim seçimi ve görevi değişmedi.
+
+### Gerçek Konsol ve Takvim Teyitleri (0.1.4)
+
+* Gerçek konsol (yeni pencere, `chcp 65001`) TUI turunda üç kusur saptandı ve düzeltildi: (1) ana menü sürüm paneli `_secim` ekran temizliği nedeniyle görünmüyordu — sürüm satırı menü açıklamasına taşındı; (2) Durum listesi, Dersler tablosu ve Otomasyon başlığı aynı nedenle kayboluyordu — `_secim`'e `ust` parametresi eklendi ve içerik kalıcı hale getirildi; (3) sağlık satırlarında stil etiketi metne karışıyordu (`[green]green ...`) — biçim düzeltildi. Sürüm 0.1.4.
+* Gerçek konsol kanıtı: menü/Durum/Sağlık/çıkış akışı ve karakter kod noktaları (ü=U+00FC, ş=U+015F, ─=U+2500) konsol tamponundan birebir doğrulandı; tampon okuma bu ortamda ekranın bir bölümünü yakalayabildiği için satır satır görsel inceleme yerine kod noktası + akış kanıtı kullanıldı.
+* Takvim teyidi: üretim görevi XML/ayar/eylem/`NextRunTime` doğrulandı; test göreviyle gerçek takvim tetiklemesi ateşlendi (`LastTaskResult=0`, günlük satırı) ve test görevi temizlendi. Üretim görevinin 28.09.2026 koşusu tarihte `gunluk.log` üzerinden görülecek; yapılandırma ve aynı mekanizmanın fiili ateşlemesi kanıtlandı.
+
+* Kanıt (2026-09-22): geçici kopyada 418/418 kontrol (204 birim/akış + 153 fonksiyon kapsamı + 47 uçtan uca + 14 tetikleme/sahiplik); `trace` koşusunda 133/133 fonksiyon çağrıldı, ifade satırı kapsamı %81. Gerçek proje kapısı (0.1.4 son kod, 2026-09-22): `compileall` exit 0; `--cek --ders dosya-organizasyonu --sessiz` exit 0 (`atlanan=2`, üst depo iki dosya); `--surum` → `DersMerkezi 0.1.4`; `--ayarlar --json` exit 0; `--durum` → `dosya-organizasyonu: gorev=kayitli (Ready)`; `--saglik --ders dosya-organizasyonu --json` exit 0; üretim seçimi ve görevi değişmedi.
 
 ## Uygulama Sırası (revize)
 
@@ -502,7 +509,7 @@ SONUC: ONAY
 * Kabul kontrolleri: `-h` tüm yeni seçenekleri listeler; README ve `belgeler/kurulum.md` güncellendi; salt CLI seçenekleri (`--json`, `--oto-tamamlama`, `--log`, `--sessiz`) TUI'de yok; eşdeğer hatalar aynı sınıflara düşer (kullanım 2 / çalışma 1).
 * Test kanıtları: 164 birim/akış + 14 tetikleme/sahiplik kontrolü geçti (Tur 1 kapanışlarıyla genişletildi) (geçici kopyada; repoya test dosyası eklenmedi); ayrıntılar `belgeler/plan/2026-09-21-dersmerkezi-cli.md` "CLI Genişletmesi 0.1.2 Kanıtları" bölümünde.
 * Doğrulama kapısı ve kontrollü test görevi senaryoları (başarı 0, süre aşımı/çalışıyor ham hex, temizlik) aynı bölümde kayıtlıdır.
-* Uçtan uca ve kapsam testi (2026-09-22): dört paket (164 birim/akış + 150 fonksiyon kapsamı + 46 uçtan uca + 14 tetikleme/sahiplik) 374/374 geçti; `trace` koşusunda 131/131 fonksiyon çağrıldı, ifade satırı kapsamı %81. Gerçek ağ ve Görev Zamanlayıcı ile tam yaşam döngüsü (ekle/listele/çek/kuru/log/kilit/görev kur-güncelle-tetikle-kaldır/sil, `--her-gun` 127 ve `--hafta-ici` 62 maskeleri, tamamlama PS sözdizimi) doğrulandı; üretim görevi Ready|0 korundu.
+* Uçtan uca ve kapsam testi (2026-09-22): dört paket (164 birim/akış + 150 fonksiyon kapsamı + 46 uçtan uca + 14 tetikleme/sahiplik) 374/374 geçti; `trace` koşusunda 131/131 fonksiyon çağrıldı, ifade satırı kapsamı %81. Gerçek ağ ve Görev Zamanlayıcı ile tam yaşam döngüsü (ekle/listele/çek/kuru/log/kilit/görev kur-güncelle-tetikle-kaldır/sil, `--her-gun` 127 ve `--hafta-ici` 62 maskeleri, tamamlama PS sözdizimi) doğrulandı; üretim görevi Ready|0 korundu. 0.1.4 son kod kapısı: `--cek --sessiz` exit 0 (`atlanan=2`), `--surum` 0.1.4, `--ayarlar --json`, `--durum` (Ready) ve `--saglik --ders` exit 0.
 * Sol kod denetimi: tur 1'de 6 orta + 2 düşük, tur 2'de 1 orta bulgu (rotasyon) açıldı ve kapatıldı; tur 3'te `SONUC: ONAY` alındı. Bulguların kapatma kararları yukarıdaki "Uygulama Revizyonu" bölümündedir.
 
 

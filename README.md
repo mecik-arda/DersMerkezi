@@ -2,7 +2,8 @@
 
 Windows masaüstünde çalışan, Python + Rich tabanlı çok dersli içerik çekme aracı. GitHub depolarına eklenen haftalık ders içeriklerini (ör. `Hafta N.pdf`) indirir, Git blob SHA-1 ile doğrular, pypdf ile Markdown bağlamına dönüştürür ve ders bazında haftalık Windows Görev Zamanlayıcı otomasyonu kurar.
 
-Private depo: <https://github.com/mecik-arda/DersMerkezi>
+Depo: <https://github.com/mecik-arda/DersMerkezi>
+Lisans: Apache-2.0 (bkz. `LICENSE`, `NOTICE`).
 
 ## Dökümanlar
 
@@ -18,7 +19,7 @@ Private depo: <https://github.com/mecik-arda/DersMerkezi>
 * Python 3.13 (Anaconda) ve şu paketler gerekir: `rich`, `requests`, `pypdf` (bu makinede kurulu).
 * Klonlama: `git clone https://github.com/mecik-arda/DersMerkezi.git`
 * Çalıştırma: `baslat.cmd` dosyasına çift tıklayın veya masaüstündeki `DersMerkezi.bat` kısayolunu kullanın.
-* Masaüstü başlatıcı: `C:\Users\ardam\Desktop\DersMerkezi.bat`
+* Masaüstü başlatıcı: `%USERPROFILE%\Desktop\DersMerkezi.bat`
 * Sürüm kontrolü dışında tutulanlar: `dersler/` (indirilen içerik), `gunluk.log`, `ayarlar.json` ve geçici/yedek dosyalar (`.gitignore`).
 
 ## Kullanım (TUI)
@@ -100,3 +101,7 @@ Bu makinede taşıma 2026-09-21 tarihinde çalıştırıldı: eski `DosyaOrganiz
 * Kamuya açık depolarda `GITHUB_TOKEN` gerekmez; tanımlanırsa API limiti yükselir.
 * Görev tetiklemesi test kapsamında doğrulandı (elle koşu, tek seferlik ve haftalık tetikleyici; `LastTaskResult=0`); üretim görevinin takvimli koşusu `gunluk.log` ile teyit edilir.
 * TUI iş mantığı scriptli tuş girdisiyle test edilir; gerçek konsol görünümü kullanıcı tarafındadır.
+
+## Lisans
+
+Apache License 2.0. Ayrıntılar için `LICENSE` ve `NOTICE` dosyalarına bakın.

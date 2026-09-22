@@ -1,7 +1,7 @@
 # DersMerkezi CLI - Keşif ve Plan Belgesi
 
 Tarih: 2026-09-21
-Durum: Uygulandı ve doğrulandı (M1-M5); bağımsız doğrulama turları ve bulgu düzeltmeleri tamamlandı (0.1.1). Görev tetiklemesi ve TUI iş mantığı test kapsamında doğrulandı; yalnızca üretim görevinin ilk takvimli koşusu ve gerçek konsol TUI görünümü kullanıcı tarafında teyit edilecek.
+Durum: Uygulandı ve doğrulandı (M1-M5); bağımsız doğrulama turları ve bulgu düzeltmeleri tamamlandı (0.1.1). Görev tetiklemesi ve TUI iş mantığı test kapsamında doğrulandı; gerçek konsol TUI akışı ve karakter kod noktaları 0.1.4'te doğrulandı (2026-09-22); yalnızca üretim görevinin 28.09.2026 tarihli takvimli koşusu `gunluk.log` ile teyit edilecek.
 Proje kökü: C:\Users\ardam\Desktop\Yazılım_Siber\DersMerkezi
 
 ## Hedef ve Kapsam
@@ -150,7 +150,7 @@ Bağımlılık: M3, M1-M2 üzerine kurulur; M4, M1 ve taşıma planı üzerine. 
 ## Doğrulanamayan veya Açık Noktalar
 
 * Zamanlanmış görev yürütmesi test kapsamında doğrulandı (elle koşu, tek seferlik ve haftalık tetikleyici; `LastTaskResult=0`). Üretim görevinin kendi takvimli koşusu kullanıcı tarafında `gunluk.log` ile teyit edilir.
-* TUI iş mantığı scriptli tuş girdisiyle test edildi (gezinme, çoklu seçim, çekme ekranı); gerçek konsol etkileşimi ve görsel kalite kullanıcı deneyimiyle doğrulanır.
+* TUI iş mantığı scriptli tuş girdisiyle test edildi (gezinme, çoklu seçim, çekme ekranı); gerçek konsol etkileşimi 0.1.4'te doğrulandı; satır satır görsel kalite kod noktası ve akış kanıtıyla sınırlıdır.
 * Rich animasyonunun kullanıcının varsayılan konsolundaki görsel kalitesi.
 * Disk dolması ve yazma izni hatalarının gerçek ortamda üretilmesi sınırlı ölçekte denenebilir; kod yolu gözden geçirilir.
 * pythonw altında stdout/stderr davranışı görev bağlamına göre değişir; kod tarafı güvenli yazıldığı için risk düşüktür, görev testi kullanıcı tarafında görülecektir.
@@ -244,13 +244,13 @@ Uçtan uca kapanış kontrolleri (ek tur):
 * Taşıma hata senaryoları (11 kontrol): mevcut kayıt varken görev kurulumu başarısız → kayıt korunur, otomasyon eski değerine döner, eski görev durur; yeni kayıtla başarısız → kayıt geri alınır; görev kurulup sonra hata → yalnızca bu kuruluma ait görev kaldırılır, eski görev ve üretim görevi korunur. Sonuç: 11/11 geçti.
 * HTTP hata matrisi (4 kontrol): 429 + `Retry-After` tekrarı ve kalıcı 429, 403 limit mesajı, 401 mesajı. Sonuç: 4/4 geçti (404 ve 500 daha önceki turlarda).
 * Kapsam (3 kontrol): depo kökünde desen dışı `.gitignore`/`LICENSE` indirilmez; `secili=false` ders `--cek` akışında atlanır (rapor `atlanan=1`).
-* Başlatıcı zinciri: `C:\Users\ardam\Desktop\DersMerkezi.bat` → `baslat.cmd --durum` exit 0; etkileşimli TUI kullanıcı tarafında.
+* Başlatıcı zinciri: `C:\Users\ardam\Desktop\DersMerkezi.bat` → `baslat.cmd --durum` exit 0; etkileşimli TUI 0.1.4'te gerçek konsolda doğrulandı.
 * Uzun yol: 320 karakterlik proje yolunda `--durum`, `--ekle`, `--listele` exit 0 ve dosyalar oluştu (LongPathsEnabled=1).
 * Görev güncelleme: aynı ders için `PZT 09:00` kurulduktan sonra `SAL,CAR 10:30` ile güncellendi; sorgu gün maskesi 12 ve başlangıç 10:30 döndü; kaldırma görevi sildi.
 * `--otomatik` ve `--sessiz`: her ikisinde stdout boş, exit 0, özet `gunluk.log`'a yazıldı; kullanım hatası stderr'e yazıldı ve stdout boş kaldı (exit 2).
 * Zamanlanmış komut simülasyonu (düzeltmelerden sonra): `pythonw.exe "…\dersmerkezi.py" --otomatik --ders dosya-organizasyonu --sessiz` exit 0 ve log satırı üretildi.
 * Görev Zamanlayıcı fiili yürütme: elle `Start-ScheduledTask` çalıştırması (`LastTaskResult=0`) ve tek seferlik tetikleyici (19:22:00) ile haftalık tetikleyici (PZT 19:24) fiilen ateşlendi; her koşuda `gunluk.log` satırı üretildi, test görevleri kaldırıldı. Böylece "zamanlanmış yürütme doğrulanamıyor" kısıtı kapatıldı; üretim görevinin 28.09.2026 09:00 koşusu `gunluk.log` ile teyit edilir.
-* TUI iş mantığı (7 kontrol): scriptli tuş girdisiyle ana menü gezinme ve geri dönüş, ayarlar çoklu seçim/kaydetme, seçili derslerin çekme ekranına aktarılması, ilerleme geri bildirimi, tamamlanma ve uyarı çıktıları doğrulandı. Gerçek konsol görünümü kullanıcı tarafında.
+* TUI iş mantığı (7 kontrol): scriptli tuş girdisiyle ana menü gezinme ve geri dönüş, ayarlar çoklu seçim/kaydetme, seçili derslerin çekme ekranına aktarılması, ilerleme geri bildirimi, tamamlanma ve uyarı çıktıları doğrulandı. Gerçek konsol görünümü 0.1.4'te doğrulandı (kod noktası + akış kanıtı).
 
 ### Sol Bağımsız Denetimi ve Kapatılan Bulgular (2026-09-21)
 
@@ -292,7 +292,7 @@ Pil politikası kök nedeni ve üretim görevi elle tetikleme kanıtı (2026-09-
 * Private depo oluşturuldu ve ilk push yapıldı: <https://github.com/mecik-arda/DersMerkezi>. Komut: `gh repo create DersMerkezi --private --source . --remote origin --push` (gh 2.95, hesap `mecik-arda`, `repo` kapsamı).
 * Araştırma için Gemini rotaları (3.8 Flash ve Pro) denendi; ikisi de `web_evidence_invalid` verdi (AGENTS'teki bilinen sınırlama). `gh repo create` söz dizimi yerel `gh repo create --help` çıktısı ve `gh auth status` ile doğrulandı.
 
-Kabul kriterleri durumu: 1-18 fiili doğrulama dahil tamamlandı; kalan yalnızca üretim görevinin takvimli ilk koşusunun ve gerçek konsol TUI görünümünün kullanıcı tarafında teyidi.
+Kabul kriterleri durumu: 1-18 fiili doğrulama dahil tamamlandı; gerçek konsol TUI akışı ve karakter kod noktaları 0.1.4'te doğrulandı; kalan yalnızca üretim görevinin 28.09.2026 tarihli takvimli koşusunun `gunluk.log` ile teyidi.
 
 
 ### CLI Genişletmesi 0.1.2 Kanıtları (2026-09-22)
@@ -312,3 +312,21 @@ Kabul kriterleri durumu: 1-18 fiili doğrulama dahil tamamlandı; kalan yalnızc
   * Temizlik: `--otomasyon-kaldir` (görev sorgusu 0 kayıt), `--sil --onayla`, `dersler/dm-test-012` klasörü kaldırıldı; üretim görevi Ready ve sonraki koşu 28.09.2026 09:00.
 * Sol uygulama denetimi tur 1 (8 bulgu: 6 orta, 2 düşük) kapatıldı: kanal istisnası netleştirildi, kuru akışta ayar karantinası kaldırıldı (`yukle_salt`), `indir_ders` 1-200 MB fail-closed koruması, `--log` yazılabilirlik kanıtı ve özel günlük hatasında exit 1, TUI durum ekranında salt-okunur ayar okuma + sağlık erişimi, TUI zorla-md ve tek ders sağlık seçenekleri, Rich kaçışları, üretilen betikte yorumsuzluk. Yeni test paketi: 164 birim/akış + 14 tetikleme/sahiplik; gerçek proje doğrulama kapısı yeniden koşuldu. Tur 2'de açık kalan rotasyon bulgusu kapatıldı; Sol tur 3 `SONUC: ONAY` (rapor: `belgeler/gecmis/sol-denetim-2026-09-22-0.1.2.md`).
 * Sol denetimi: `belgeler/gecmis/sol-denetim-2026-09-22-0.1.2.md` (tur sonuçları).
+
+
+### CLI Ayar Dilimi 0.1.3 Kanıtları (2026-09-22)
+
+* Sol danışma kararı doğrultusunda "Öncelik 4 - CLI Ayar Görünümü ve Seçim" dilimi tek turda uygulandı: `--ayarlar` salt-okunur görünüm, `--ayarlar --ders <kimlik> --secili evet|hayir` mutasyonu, `--json` kanonik çıktısı ve TUI eşliği (`ayarlar.gorunum`, `ayarlar.secili_ayarla`; `isaretle` delege eder).
+* Sürüm 0.1.3; `merkez.__version__` tek kaynak, `UA` türetimi ve `CHANGELOG.md` uyumu doğrulandı.
+* Doğrulama: 418/418 kontrol (204 birim/akış + 153 fonksiyon kapsamı + 47 uçtan uca + 14 tetikleme/sahiplik); `trace` ile 133/133 fonksiyon, ifade satırı kapsamı %81.
+* Gerçek proje kapısı: `--cek --sessiz` (`atlanan=1`), `--surum` 0.1.3, `--ayarlar --json`, `--durum`; üretim görevi `Ready|0` olarak değişmedi.
+* Sol bağımsız denetimi 3 turda tamamlandı (tur 1: 3 orta + 2 düşük bulgu; tümü kapatıldı); tur 3'te `SONUC: ONAY` alındı; rapor `belgeler/gecmis/sol-denetim-2026-09-22-0.1.3.md`.
+
+
+### Gerçek Konsol ve Takvim Teyitleri (0.1.4)
+
+* Gerçek konsol TUI turu üç UX kusuru ortaya çıkardı ve 0.1.4'te düzeltildi: ana menü sürüm satırı artık kalıcı (`_secim` açıklama satırı), Durum/Dersler/Otomasyon ekranlarında üst bilgi `_secim(ust=...)` ile ekranda kalıyor, sağlık satırlarındaki çift stil etiketi giderildi.
+* Karakter doğruluğu konsol tamponundan kod noktası düzeyinde kanıtlandı (ü=U+00FC, ş=U+015F, ─=U+2500).
+* Üretim görevi takvimi: haftalık Pazartesi 09:00, `NextRunTime=28.09.2026 09:00`, `LastTaskResult=0`, ayarlar/eylem birebir dondurulmuş dize; test göreviyle gerçek takvim tetiklemesi ateşlendi (20:35:00, sonuç 0) ve temizlendi.
+* Paketler son kod haliyle yeniden koşuldu: 418/418 kontrol (204 birim/akış + 153 fonksiyon kapsamı + 47 uçtan uca + 14 tetikleme/sahiplik).
+* Gerçek proje kapısı (2026-09-22, son kod): `compileall` exit 0; `--cek --ders dosya-organizasyonu --sessiz` exit 0 (`atlanan=2`, üst depo iki dosya); `--surum` çıktısı `DersMerkezi 0.1.4`; `--ayarlar --json` exit 0; `--durum` → `dosya-organizasyonu: gorev=kayitli (Ready)`; `--saglik --ders dosya-organizasyonu --json` exit 0 (tek API çağrısı, kota metni).
