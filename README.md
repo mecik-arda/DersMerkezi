@@ -9,6 +9,7 @@ Private depo: <https://github.com/mecik-arda/DersMerkezi>
 * `belgeler/kurulum.md`: Kurulum, ilk kullanım, sorun giderme.
 * `belgeler/mimari.md`: Modül haritası, veri akışı, şemalar, güvenlik değişmezleri.
 * `belgeler/plan/2026-09-21-dersmerkezi-cli.md`: Keşif/plan belgesi ve doğrulama kanıtları.
+* `belgeler/plan/2026-09-21-cli-gelistirme-onerileri.md`: CLI geliştirme önerileri (öncelikli, uygulanmadı).
 * `belgeler/gecmis/`: Taşıma kanıtları ve Sol bağımsız denetim raporu.
 * `AGENTS.md`: Ajan/geliştirme kuralları ve bağlayıcı bağlam; `CHANGELOG.md`: sürüm kaydı.
 
