@@ -9,6 +9,7 @@
 ### Değişti
 
 * Public hazırlığı: "private depo" ifadeleri kaldırıldı; kullanıcıya dönük belgelerde (README, `belgeler/kurulum.md`, `AGENTS.md`, `CHANGELOG.md`) kişisel mutlak yollar genelleştirildi; tarihsel kanıt dosyaları (belgeler/gecmis) değiştirilmedi.
+* Depo 2026-09-22'de public yapıldı; secret scanning, push protection, Dependabot güvenlik güncellemeleri ve özel güvenlik bildirimi etkinleştirildi.
 
 ### Doğrulama
 
