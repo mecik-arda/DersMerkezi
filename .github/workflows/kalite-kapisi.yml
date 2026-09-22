@@ -1,0 +1,43 @@
+name: Kalite Kapısı
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    name: Derleme ve sözleşme kontrolleri
+    runs-on: windows-latest
+    steps:
+      - name: Depoyu al
+        uses: actions/checkout@v4
+
+      - name: Python 3.13 kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Bağımlılıkları kur
+        run: python -m pip install --disable-pip-version-check rich requests pypdf
+
+      - name: Derleme
+        run: python -m compileall merkez dersmerkezi.py
+
+      - name: Sürüm ve CHANGELOG uyumu
+        shell: pwsh
+        run: |
+          python -c "import re,subprocess,sys; from pathlib import Path; surum=subprocess.run([sys.executable,'dersmerkezi.py','--surum'],capture_output=True,text=True,check=True).stdout.strip().split()[-1]; baslik=re.search(r'^## (\d+\.\d+\.\d+)', Path('CHANGELOG.md').read_text(encoding='utf-8'), re.M).group(1); assert surum==baslik, (surum, baslik); print('surum uyumlu:', surum)"
+
+      - name: JSON sözleşmeleri ve yardım yüzeyi
+        shell: pwsh
+        run: |
+          python -c "import json,subprocess,sys; r=subprocess.run([sys.executable,'dersmerkezi.py','--ayarlar','--json'],capture_output=True,text=True,check=True); v=json.loads(r.stdout); assert v['komut']=='ayarlar' and v['json_surum']==1 and v['dersler']==[], v; print('ayarlar json ok')"
+          python -c "import json,subprocess,sys; r=subprocess.run([sys.executable,'dersmerkezi.py','--saglik','--json'],capture_output=True,text=True); v=json.loads(r.stdout); assert r.returncode==0 and v['genel']=='sorun yok', (r.returncode, v.get('sorunlar')); print('saglik json ok')"
+          python -c "import subprocess,sys; c=subprocess.run([sys.executable,'dersmerkezi.py','-h'],capture_output=True,text=True,check=True).stdout; eksik=[b for b in ['--ayarlar','--secili','--tetikle','--json','--oto-tamamlama'] if b not in c]; assert not eksik, eksik; print('yardim yuzeyi ok')"
+
+      - name: Kullanım hatası çıkış kodu
+        shell: pwsh
+        run: |
+          python -c "import subprocess,sys; k=subprocess.run([sys.executable,'dersmerkezi.py','--durum','--listele'],capture_output=True,text=True).returncode; assert k==2, k; print('kullanim hatasi exit 2 ok')"
