@@ -203,7 +203,7 @@ def _ders_ekle_ekrani():
         desen = Prompt.ask("Dosya deseni", default="Hafta*.pdf")
         kimlik = ayarlar.ders_ekle(ad, depo, dal, desen)
         KONSOL.print("[green]Eklendi: {}[/green]".format(escape(kimlik)))
-    except ValueError as hata:
+    except (ValueError, OSError) as hata:
         KONSOL.print("[red]{}[/red]".format(escape(str(hata))))
     _bekle_enter()
 
@@ -222,7 +222,7 @@ def _ders_sil_ekrani(veri):
         try:
             zamanlayici.ders_sil_guvenli(kimlik)
             KONSOL.print("[green]Silindi: {}[/green]".format(escape(kimlik)))
-        except (ValueError, RuntimeError) as hata:
+        except (ValueError, RuntimeError, OSError) as hata:
             KONSOL.print("[red]{}[/red]".format(escape(str(hata))))
         _bekle_enter()
 
@@ -242,19 +242,27 @@ def dersler_ekrani():
 
 
 def ayarlar_ekrani():
-    veri = ayarlar.yukle()
-    if not veri["dersler"]:
+    try:
+        kayitlar = ayarlar.gorunum()
+    except RuntimeError as hata:
+        KONSOL.print("[red]{}[/red]".format(escape(str(hata))))
+        _bekle_enter()
+        return
+    if not kayitlar:
         KONSOL.print("[yellow]Once ders ekleyin.[/yellow]")
         _bekle_enter()
         return
-    ogeler = [(k, "{} ({})".format(escape(str(d.get("ad", k))), k)) for k, d in veri["dersler"].items()]
-    secili = {k for k, d in veri["dersler"].items() if d.get("secili", True)}
+    ogeler = [(k["kimlik"], "{} ({})".format(escape(k["ad"] or k["kimlik"]), escape(k["kimlik"]))) for k in kayitlar]
+    secili = {k["kimlik"] for k in kayitlar if k["secili"]}
     sonuc = _coklu_secim("Cekilecek dersleri isaretle", ogeler, secili)
     if sonuc is None:
         return
-    for kimlik in veri["dersler"]:
-        ayarlar.isaretle(kimlik, kimlik in sonuc)
-    KONSOL.print("[green]Kaydedildi.[/green]")
+    try:
+        for kayit in kayitlar:
+            ayarlar.isaretle(kayit["kimlik"], kayit["kimlik"] in sonuc)
+        KONSOL.print("[green]Kaydedildi.[/green]")
+    except (ValueError, RuntimeError, OSError) as hata:
+        KONSOL.print("[red]{}[/red]".format(escape(str(hata))))
     _bekle_enter()
 
 
@@ -310,7 +318,7 @@ def _otomasyon_detay(kimlik):
                             renk, escape(tetik["metin"]), escape(str(tetik.get("durum", ""))), renk))
                     except RuntimeError as hata:
                         KONSOL.print("[red]Tetikleme hatasi: {}[/red]".format(escape(str(hata))))
-            except (ValueError, RuntimeError) as hata:
+            except (ValueError, RuntimeError, OSError) as hata:
                 KONSOL.print("[red]{}[/red]".format(escape(str(hata))))
             _bekle_enter()
         else:
@@ -323,7 +331,7 @@ def _otomasyon_detay(kimlik):
                 oto = veri["dersler"].get(kimlik, {}).get("otomasyon", {}) or {}
                 ayarlar.otomasyon_ayarla(kimlik, oto.get("gunler") or ["PZT"], oto.get("saat", "09:00"), False)
                 KONSOL.print("[green]Gorev kaldirildi.[/green]")
-            except (ValueError, RuntimeError) as hata:
+            except (ValueError, RuntimeError, OSError) as hata:
                 KONSOL.print("[red]{}[/red]".format(escape(str(hata))))
             _bekle_enter()
 

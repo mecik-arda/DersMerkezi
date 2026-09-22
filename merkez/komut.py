@@ -19,6 +19,7 @@ MOD_ADLARI = {
     "tasima": "--tasima",
     "surum": "--surum",
     "oto_tamamlama": "--oto-tamamlama",
+    "ayarlar": "--ayarlar",
     "otomatik": "--otomatik",
 }
 
@@ -47,6 +48,7 @@ BAYRAK_ADLARI = {
     "hafta_ici": "--hafta-ici",
     "tetikle": "--tetikle",
     "log": "--log",
+    "secili": "--secili",
 }
 
 IZINLI = {
@@ -55,13 +57,13 @@ IZINLI = {
     "dal": {"ekle"},
     "desen": {"ekle"},
     "slug": {"ekle"},
-    "ders": {"cek", "sil", "saglik", "otomasyon_kur", "otomasyon_kaldir", "otomatik"},
+    "ders": {"cek", "sil", "saglik", "otomasyon_kur", "otomasyon_kaldir", "otomatik", "ayarlar"},
     "gunler": {"otomasyon_kur"},
     "saat": {"otomasyon_kur"},
     "kuru": {"tasima", "cek"},
     "onayla": {"tasima", "sil"},
     "sessiz": (set(TUM_MODLAR) | {"otomatik"}) - {"surum"},
-    "json": {"durum", "listele", "cek", "saglik", "surum", "oto_tamamlama"},
+    "json": {"durum", "listele", "cek", "saglik", "surum", "oto_tamamlama", "ayarlar"},
     "ayrintili": {"durum", "saglik"},
     "ag": {"saglik"},
     "zorla": {"cek", "otomatik"},
@@ -72,6 +74,7 @@ IZINLI = {
     "hafta_ici": {"otomasyon_kur"},
     "tetikle": {"otomasyon_kur"},
     "log": (set(TUM_MODLAR) | {"otomatik"}) - {"surum"},
+    "secili": {"ayarlar"},
 }
 
 
@@ -109,6 +112,7 @@ def arguman_ayristirici():
     ayristirici.add_argument("--sil", action="store_true", help="Ders kaydini siler (--ders ve --onayla gerekli)")
     ayristirici.add_argument("--cek", action="store_true", help="Isaretli derslerin iceriklerini ceker")
     ayristirici.add_argument("--durum", action="store_true", help="Ders ve gorev durumunu gosterir")
+    ayristirici.add_argument("--ayarlar", action="store_true", help="Ders ayarlarini gosterir veya secim durumunu degistirir")
     ayristirici.add_argument("--saglik", action="store_true", help="Ortam ve erisim on kontrolu yapar")
     ayristirici.add_argument("--otomasyon-kur", dest="otomasyon_kur", action="store_true", help="Ders icin haftalik gorev kurar")
     ayristirici.add_argument("--otomasyon-kaldir", dest="otomasyon_kaldir", action="store_true", help="Dersin gorevini kaldirir")
@@ -136,6 +140,7 @@ def arguman_ayristirici():
     ayristirici.add_argument("--desen", default=None, help="Dosya deseni (varsayilan Hafta*.pdf)")
     ayristirici.add_argument("--slug", help="Ders kimligi (otomatik uretilir)")
     ayristirici.add_argument("--ders", help="Ders kimligi")
+    ayristirici.add_argument("--secili", choices=["evet", "hayir"], help="--ayarlar ile cekilme isaretini degistirir (evet/hayir)")
     ayristirici.add_argument("--gunler", default=None, help="Virgullu gun listesi (PZT,SAL,...)")
     ayristirici.add_argument("--saat", default=None, help="Saat (SS:DD)")
     return ayristirici
@@ -189,6 +194,8 @@ def _ozel_kontroller(secenekler, mod):
             raise KullanimHatasi("--sil yalnızca --onayla ile çalışır; silme geri alınamaz")
     if mod in ("otomasyon_kur", "otomasyon_kaldir") and not secenekler.ders:
         raise KullanimHatasi("{} için --ders zorunludur".format(MOD_ADLARI[mod]))
+    if mod == "ayarlar" and secenekler.secili and not secenekler.ders:
+        raise KullanimHatasi("--secili için --ders zorunludur")
     if secenekler.kuru and secenekler.onayla:
         raise KullanimHatasi("--kuru ile --onayla birlikte kullanılamaz")
     if secenekler.ag and secenekler.ders:

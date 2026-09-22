@@ -9,9 +9,9 @@ DersMerkezi, Windows masaüstünde çalışan Python + Rich tabanlı çok dersli
 * Proje kökü: `C:\Users\ardam\Desktop\Yazılım_Siber\DersMerkezi`
 * Private depo: `https://github.com/mecik-arda/DersMerkezi` (tüm içerik Türkçe; sürüm kontrolü dışı: `dersler/`, `gunluk.log`, `ayarlar.json`, geçici/yedek dosyalar).
 * Plan belgesi: `belgeler/plan/2026-09-21-dersmerkezi-cli.md` (sonunda uygulama ve doğrulama kanıtları)
-* CLI geliştirme önerileri: `belgeler/plan/2026-09-21-cli-gelistirme-onerileri.md` (öncelikli maddeler, mimari kararlar ve kaynaklar; Sol denetiminden ONAY aldı, uygulanmadı)
+* CLI geliştirme önerileri: `belgeler/plan/2026-09-21-cli-gelistirme-onerileri.md` (öncelikli maddeler, mimari kararlar ve kaynaklar; Sol denetimlerinden ONAY aldı; 0.1.2 ve 0.1.3 dilimleri uygulandı)
 * Durum: M1-M5 uygulandı ve doğrulandı; bağımsız doğrulama turu ve 6 turluk Sol denetimi (toplam 19 bulgu kapatıldı, son turda ONAY) tamamlandı (sürüm 0.1.1). Görev tetiklemesi ve TUI iş mantığı test kapsamında doğrulandı; gerçek konsol görünümü ve üretim görevinin ilk takvimli koşusu kullanıcı tarafında teyit edilecek.
-* CLI genişletmesi (sürüm 0.1.2) uygulandı: mod/bayrak matrisi ve Türkçe doğrulama, `--json` kanal sözleşmesi, `--surum`, `--cek --kuru`, `--sil --onayla`, `--zorla/--zorla-md`, `--saglik/--ag/--ayrintili`, `--kilit-bekle`, `--sinir`, `--tetikle`, `--her-gun/--hafta-ici`, `--log`, `--oto-tamamlama` ve TUI eşliği; öneri planı Sol denetiminden ONAY aldı (tur 6). Uygulama sonrası Sol kod denetimi 3 turda tamamlandı (9 bulgu kapatıldı: kanal istisnası, kuru karantina, 200 MB guard, log yazılabilirlik/rotasyon, TUI salt-okunurluk ve eşlik, Rich kaçışları, üretilen betik); son turda ONAY alındı. Uçtan uca ve kapsam testi (2026-09-22): 374/374 kontrol (birim 164, fonksiyon kapsamı 150, uçtan uca 46, tetikleme 14), `trace` ile 131/131 fonksiyon kapsamı; gerçek görev yaşam döngüsü ve üretim görevi değişmezliği doğrulandı.
+* CLI genişletmesi (sürüm 0.1.2) uygulandı: mod/bayrak matrisi ve Türkçe doğrulama, `--json` kanal sözleşmesi, `--surum`, `--cek --kuru`, `--sil --onayla`, `--zorla/--zorla-md`, `--saglik/--ag/--ayrintili`, `--kilit-bekle`, `--sinir`, `--tetikle`, `--her-gun/--hafta-ici`, `--log`, `--oto-tamamlama` ve TUI eşliği; öneri planı Sol denetiminden ONAY aldı (tur 6). Uygulama sonrası Sol kod denetimi 3 turda tamamlandı (9 bulgu kapatıldı: kanal istisnası, kuru karantina, 200 MB guard, log yazılabilirlik/rotasyon, TUI salt-okunurluk ve eşlik, Rich kaçışları, üretilen betik); son turda ONAY alındı. Ayar dilimi (0.1.3) eklendi: `--ayarlar` salt-okunur görünüm ve `--ayarlar --ders X --secili evet|hayir` ile güvenli seçim değişikliği; TUI aynı ortak işlevi kullanır. Sol denetimi 3 turda ONAY aldı (5 bulgu kapatıldı). Uçtan uca ve kapsam testi (2026-09-22): 374/374 kontrol (birim 164, fonksiyon kapsamı 150, uçtan uca 46, tetikleme 14), `trace` ile 131/131 fonksiyon kapsamı; gerçek görev yaşam döngüsü ve üretim görevi değişmezliği doğrulandı.
 * Kayıtlı ders: `dosya-organizasyonu` (`emirozturk/Dosya-Organizasyonu-2026`, desen `Hafta*.pdf`); görev `DersMerkezi_dosya-organizasyonu` haftalık PZT 09:00.
 * Eski PowerShell otomasyonu taşındı; eski `DosyaOrganizasyonu_HaftalikCek` görevi kaldırıldı.
 
@@ -27,7 +27,7 @@ DersMerkezi, Windows masaüstünde çalışan Python + Rich tabanlı çok dersli
 
 * `dersmerkezi.py`: Giriş noktası; mod işleyicileri, CLI argümanları ve TUI başlatma.
 * `merkez/komut.py`: Argüman ayrıştırıcı, mod/bayrak matrisi doğrulaması, JSON çıktı sözleşmesi, Türkçe ayrıştırma hata eşlemesi.
-* `merkez/ayarlar.py`: `ayarlar.json` şeması (surum=1), doğrulama (slug/depo/dal/desen/saat/gün), `veri_dogrula`/`ders_dogrula` salt-okunur denetim, atomik yazım, tek nesil yedek.
+* `merkez/ayarlar.py`: `ayarlar.json` şeması (surum=1), doğrulama, `veri_dogrula`/`ders_dogrula`, `yukle_salt`/`gorunum` salt-okunur görünüm, `secili_ayarla` fail-closed seçim mutasyonu, atomik yazım ve tek nesil yedek.
 * `merkez/indirici.py`: Contents API listeleme (kota meta verisi), akışlı indirme (`.part`), blob SHA-1 doğrulama, Markdown üretimi, kuru ve zorlama modları, durum şeması v2.
 * `merkez/durum.py`: Ders/görev durum kayıtları ve ayrıntılı durum (CLI + TUI ortak).
 * `merkez/saglik.py`: Salt-okunur sağlık denetimi; `--ders`/`--ag` sınırlı ağ, `--ayrintili` sınırlı görev sorgusu.
@@ -100,5 +100,6 @@ Başarısız doğrulama geçmiş sayılmaz; hata sınıfı (izin/şema/ağ/zaman
 * Sağlık: `python dersmerkezi.py --saglik [--ders <slug>|--ag|--ayrintili] [--json]`
 * Sürüm/JSON: `python dersmerkezi.py --surum`; diğer JSON modları `--durum`, `--listele`, `--cek`, `--saglik`, `--oto-tamamlama`
 * Tamamlama: `python dersmerkezi.py --oto-tamamlama` → `tamamlama/dersmerkezi-tamamlama.ps1`
+* Ayar görünümü/seçim: `python dersmerkezi.py --ayarlar [--ders <slug>] [--secili evet|hayir] [--json]`
 * Silme (onaylı): `python dersmerkezi.py --sil --ders <slug> --onayla`
 * Günlükler: `gunluk.log` ve `dersler/<slug>/indirilenler.json`

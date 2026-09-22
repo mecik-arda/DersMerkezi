@@ -88,7 +88,7 @@ python dersmerkezi.py --saglik --json
 python dersmerkezi.py --surum --json
 ```
 
-* `--json` şu modlarla geçerlidir: `--durum`, `--listele`, `--cek`, `--saglik`, `--surum`, `--oto-tamamlama`.
+* `--json` şu modlarla geçerlidir: `--durum`, `--listele`, `--cek`, `--saglik`, `--surum`, `--oto-tamamlama`, `--ayarlar`.
 * Başarılı koşuda stdout yalnızca tek JSON nesnesi içerir (`json_surum`, `komut`, `uygulama_surum`); insan-okur metinler stderr'e gider.
 * Çalışma hatasında (exit 1) stderr'e `{json_surum, komut, hata:{sinif, mesaj}}` ve insan satırı yazılır, stdout boş kalır. Kullanım hatası (exit 2) düz Türkçe metindir, JSON içermez.
 * `--json` ile `--ayrintili` birlikte kullanılamaz.
@@ -109,6 +109,20 @@ python dersmerkezi.py --durum --ayrintili
 * Yabancı veya taklit görevler (farklı eylem, çok eylemli görev) reddedilir; ders silme yalnızca bu kuruluma ait görevi kaldırır.
 * `--tetikle` görevi bir kez çalıştırıp `LastTaskResult` değerini raporlar: `0` başarı, `267011` hiç çalışmadı; diğer kodlar ham/hex olarak yazılır. Zaman aşımında koşul teşhisi (pil, boşta, ağ, oturum türü) raporlanır ve exit 1 döner; tetikleme hatası kurulumu geri almaz.
 * `--her-gun` (yedi gün) ve `--hafta-ici` (PZT-CUM) kısayolları `--gunler` ile birlikte kullanılamaz.
+
+### Ayar görünümü ve seçim
+
+```powershell
+python dersmerkezi.py --ayarlar
+python dersmerkezi.py --ayarlar --ders dosya-organizasyonu
+python dersmerkezi.py --ayarlar --ders dosya-organizasyonu --secili hayir
+python dersmerkezi.py --ayarlar --json
+```
+
+* `--ayarlar` ders ayarlarını (ad, depo, dal, desen, seçili durumu, otomasyon özeti) salt-okunur gösterir; ağ çağrısı, görev sorgusu ve dosya yazımı yapmaz; bozuk `ayarlar.json` karantinaya alınmaz (exit 1).
+* `--secili evet|hayir` yalnız `--ayarlar` ile ve `--ders` ile birlikte kullanılır; seçim değişikliği `Local\DersMerkezi` kilidi, atomik yazım ve tek nesil yedek zincirinden geçer. Bilinmeyen ders exit 2, kullanım hataları dosya izi bırakmaz.
+* `--json` çıktısı `{json_surum, komut, uygulama_surum, dersler[]}`; mutasyon sonrası yeni durum döner. `--sessiz` yalnız insan-okur satırları bastırır, JSON stdout'ta kalır.
+* TUI'deki "Ayarlar" ekranı aynı ortak işlevi (`ayarlar.secili_ayarla`) kullanır.
 
 ### Ders silme
 

@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.3 - 2026-09-22
+
+### Eklendi
+
+* `--ayarlar` bağımsız modu: ders ayarlarını (ad, depo, dal, desen, seçili durumu, otomasyon özeti) salt-okunur gösterir; `--ders` ile tek ders, `--json` ile kanonik JSON çıktısı.
+* `--ayarlar --ders <kimlik> --secili evet|hayir`: çekilme işaretini CLI'dan değiştirir; `ayarlar.secili_ayarla` fail-closed ortak işlevi (mutex, atomik yazım, yedek) kullanılır; `ayarlar.isaretle` ve TUI aynı yolu çağırır.
+* Görünüm ve mutasyon bozuk `ayarlar.json` dosyasını karantinaya almaz; görünüm sırasında ağ/görev/indirme izi oluşmaz.
+
+### Doğrulama
+
+* Sol bağımsız denetimi 3 turda tamamlandı (3 orta + 2 düşük bulgu kapatıldı; rapor `belgeler/gecmis/sol-denetim-2026-09-22-0.1.3.md`, son tur `SONUC: ONAY`).
+* Geçici kopyada 418/418 kontrol (204 birim/akış + 153 fonksiyon kapsamı + 47 uçtan uca + 14 tetikleme/sahiplik) geçti; `trace` ile 133/133 fonksiyon çağrıldı (ifade satırı %81). Gerçek projede `--ayarlar` görünümü ve `--cek --sessiz` (atlanan=1) doğrulandı; üretim görevi Ready kaldı. Ayrıntılar `belgeler/plan/2026-09-21-cli-gelistirme-onerileri.md` "Öncelik 4" ve kanıt bölümünde.
+
 ## 0.1.2 - 2026-09-22
 
 ### Eklendi

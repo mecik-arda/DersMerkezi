@@ -124,6 +124,36 @@ def _calistir(secenekler, mod, ayristirici):
                 kimlik, ders.get("ad", ""), ders.get("depo", ""), ders.get("secili", True), oto_metin))
         return 0
 
+    if mod == "ayarlar":
+        if secenekler.secili:
+            ayarlar.secili_ayarla(secenekler.ders, secenekler.secili == "evet")
+            gunluk.kayit("BILGI", "Ayar güncellendi: {} secili={}".format(secenekler.ders, secenekler.secili))
+        try:
+            kayitlar = ayarlar.gorunum(secenekler.ders)
+        except RuntimeError as hata:
+            if secenekler.json:
+                komut.hata_json_yaz("ayarlar", str(hata))
+            if not gunluk.SESSIZ:
+                sys.stderr.write("Hata: {}\n".format(hata))
+            return 1
+        if secenekler.json:
+            komut.json_yaz(komut.kok_json("ayarlar", dersler=kayitlar))
+            return 0
+        if not gunluk.SESSIZ:
+            if not kayitlar:
+                print("Kayitli ders yok.")
+                return 0
+            for kayit in kayitlar:
+                oto = kayit["otomasyon"]
+                if oto["aktif"]:
+                    oto_metin = "{} {}".format(",".join(oto["gunler"]), oto["saat"])
+                else:
+                    oto_metin = "kapali"
+                print("{}\t{}\t{}\tdal={}\tdesen={}\tsecili={}\totomasyon={}".format(
+                    kayit["kimlik"], kayit["ad"], kayit["depo"], kayit["dal"], kayit["desen"],
+                    kayit["secili"], oto_metin))
+        return 0
+
     if mod == "durum":
         kayitlar = durum.kayitlar(ayrintili=bool(secenekler.ayrintili))
         if secenekler.json:

@@ -250,10 +250,16 @@ def kaydet(veri):
     veri = dict(veri)
     veri["surum"] = SURUM
     if AYAR_YOLU.exists():
+        gecici_yedek = YEDEK_YOLU.with_name(YEDEK_YOLU.name + ".tmp")
         try:
-            shutil.copy2(AYAR_YOLU, YEDEK_YOLU)
+            shutil.copy2(AYAR_YOLU, gecici_yedek)
+            _replace_tekrar(gecici_yedek, YEDEK_YOLU)
         except OSError:
-            pass
+            try:
+                gecici_yedek.unlink()
+            except OSError:
+                pass
+            raise
     _json_yaz(AYAR_YOLU, veri)
 
 
@@ -306,13 +312,46 @@ def ders_getir(slug):
     return ders
 
 
-def isaretle(slug, secili):
+def gorunum(ders=None):
+    veri, hata = yukle_salt()
+    if hata:
+        raise RuntimeError("{} (ayarlar değiştirilmedi)".format(hata))
+    if ders and ders not in veri["dersler"]:
+        raise ValueError("Ders bulunamadı: {}".format(ders))
+    kayitlar = []
+    for kimlik, kayit in veri["dersler"].items():
+        if ders and kimlik != ders:
+            continue
+        oto = kayit.get("otomasyon", {}) or {}
+        kayitlar.append({
+            "kimlik": kimlik,
+            "ad": str(kayit.get("ad", "")),
+            "depo": str(kayit.get("depo", "")),
+            "dal": str(kayit.get("dal", "main")),
+            "desen": str(kayit.get("desen", "Hafta*.pdf")),
+            "secili": bool(kayit.get("secili", True)),
+            "otomasyon": {
+                "aktif": bool(oto.get("aktif")),
+                "gunler": list(oto.get("gunler") or []),
+                "saat": str(oto.get("saat", "09:00")),
+            },
+        })
+    return kayitlar
+
+
+def secili_ayarla(slug, secili):
     with gunluk.kilitle():
-        veri = yukle()
+        veri, hata = yukle_salt()
+        if hata:
+            raise RuntimeError("{} (ayar değiştirilmedi)".format(hata))
         if slug not in veri["dersler"]:
             raise ValueError("Ders bulunamadı: {}".format(slug))
         veri["dersler"][slug]["secili"] = bool(secili)
         kaydet(veri)
+
+
+def isaretle(slug, secili):
+    secili_ayarla(slug, secili)
 
 
 def secili_dersler():

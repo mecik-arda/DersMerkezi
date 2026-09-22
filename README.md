@@ -9,7 +9,7 @@ Private depo: <https://github.com/mecik-arda/DersMerkezi>
 * `belgeler/kurulum.md`: Kurulum, ilk kullanım, sorun giderme.
 * `belgeler/mimari.md`: Modül haritası, veri akışı, şemalar, güvenlik değişmezleri.
 * `belgeler/plan/2026-09-21-dersmerkezi-cli.md`: Keşif/plan belgesi ve doğrulama kanıtları.
-* `belgeler/plan/2026-09-21-cli-gelistirme-onerileri.md`: CLI geliştirme önerileri (öncelikli, uygulanmadı).
+* `belgeler/plan/2026-09-21-cli-gelistirme-onerileri.md`: CLI geliştirme önerileri (öncelikli; 0.1.2 ve 0.1.3 dilimleri uygulandı, Sol denetimli).
 * `belgeler/gecmis/`: Taşıma kanıtları ve Sol bağımsız denetim raporu.
 * `AGENTS.md`: Ajan/geliştirme kuralları ve bağlayıcı bağlam; `CHANGELOG.md`: sürüm kaydı.
 
@@ -44,8 +44,10 @@ Private depo: <https://github.com/mecik-arda/DersMerkezi>
 * Kur ve hemen dene: `python dersmerkezi.py --otomasyon-kur --ders dosya-organizasyonu --tetikle`
 * Otomasyon kaldırma: `python dersmerkezi.py --otomasyon-kaldir --ders dosya-organizasyonu`
 * Durum: `python dersmerkezi.py --durum` (ayrıntılı: `--durum --ayrintili`)
+* Ayar görünümü: `python dersmerkezi.py --ayarlar` (tek ders: `--ayarlar --ders <kimlik>`, JSON: `--json`)
+* Seçim değiştirme: `python dersmerkezi.py --ayarlar --ders <kimlik> --secili evet|hayir`
 * Sağlık kontrolü: `python dersmerkezi.py --saglik` (ders için ağ: `--saglik --ders <kimlik>`; tümü: `--saglik --ag`)
-* JSON çıktı: `--durum`, `--listele`, `--cek`, `--saglik`, `--surum`, `--oto-tamamlama` ile `--json`
+* JSON çıktı: `--durum`, `--listele`, `--cek`, `--saglik`, `--surum`, `--oto-tamamlama`, `--ayarlar` ile `--json`
 * Sürüm: `python dersmerkezi.py --surum`
 * PowerShell tamamlama: `python dersmerkezi.py --oto-tamamlama` (çıktı: `tamamlama/dersmerkezi-tamamlama.ps1`)
 * Alternatif günlük: `python dersmerkezi.py --durum --log alt/gunluk.log`

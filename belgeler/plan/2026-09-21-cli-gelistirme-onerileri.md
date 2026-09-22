@@ -1,7 +1,7 @@
 # DersMerkezi CLI Geliştirme Önerileri - Plan Belgesi
 
 Tarih: 2026-09-21
-Durum: Öneri (uygulanmadı)
+Durum: Uygulandı (Öncelik 1-4; sürüm 0.1.2 ve 0.1.3; Sol denetimlerinden ONAY)
 Kapsam: `dersmerkezi.py` komut satırı arayüzünün genişletilmesi
 İlgili belgeler: `belgeler/plan/2026-09-21-dersmerkezi-cli.md` (ana plan ve kanıtlar), `belgeler/mimari.md`, `AGENTS.md`
 
@@ -9,7 +9,7 @@ Kapsam: `dersmerkezi.py` komut satırı arayüzünün genişletilmesi
 
 Mevcut CLI seçeneklerini ( `--listele`, `--ekle`, `--sil`, `--cek`, `--durum`, `--otomasyon-kur`, `--otomasyon-kaldir`, `--otomatik`, `--tasima`, `--kuru`, `--onayla`, `--sessiz`, `--ad`, `--depo`, `--dal`, `--desen`, `--slug`, `--ders`, `--gunler`, `--saat` ) kullanıcı deneyimi, otomasyon uyumu ve güvenlik açısından iyileştirmek; yeni seçenekleri projenin değişmezleriyle (çıkış kodları, enjeksiyon sertleştirmesi, mutex, atomik yazım, Türkçe arayüz) uyumlu biçimde tanımlamak.
 
-Bu belge bir öneri listesidir; maddeler öncelik sırasına göre uygulanacaktır. Uygulama öncesi her madde için kabul kriteri ve doğrulama yöntemi aşağıda tanımlıdır.
+Bu belge, öncelik sırasına göre uygulanmış maddeleri ve her maddenin kabul kriteri ile doğrulama yöntemini içerir.
 
 ## Kapsam İlkesi: Arayüz Eşliği
 
@@ -36,6 +36,7 @@ Bu belge bir öneri listesidir; maddeler öncelik sırasına göre uygulanacakt�
 | 3.3 Gün kısayolları | `--her-gun`, `--hafta-ici` | Gün seçim ekranında "Tümü"/"Hafta içi" düğmesi | TUI eşli | `ayarlar.gun_listesi_coz` |
 | 3.4 Günlük yolu | `--log` | — | Salt CLI | `gunluk` yol parametresi |
 | 3.5 Tamamlama | `--oto-tamamlama` | — | Salt CLI | `merkez/tamamlama.py` |
+| 4.1 Ayar görünümü ve seçim | `--ayarlar [--ders] [--secili evet|hayir]` | Mevcut Ayarlar ekranındaki çoklu seçim | TUI eşli | `ayarlar.gorunum` + `ayarlar.secili_ayarla` (`isaretle` bunu çağırır) |
 
 ### Arayüz Eşliği Kabul Kontrolleri (her dilimde çalıştırılabilir)
 
@@ -87,13 +88,13 @@ Bir dilim, bu kontroller ve ilgili kabul kriterleri geçmeden "tamamlandı" say�
 |---|---|---|---|
 | `--ad`, `--depo` | `--ekle` | `--ekle` ile zorunlu | Başka modda exit 2 |
 | `--dal`, `--desen`, `--slug` | `--ekle` | Opsiyonel | Başka modda exit 2 |
-| `--ders` | `--cek`, `--sil`, `--saglik`, `--otomasyon-kur`, `--otomasyon-kaldir`, `--otomatik` | `--sil` ve `--otomasyon-*` ile zorunlu; `--cek`, `--saglik` ve `--otomatik` ile opsiyonel | `--tasima`, `--ekle`, `--durum`, `--listele` ile exit 2 |
+| `--ders` | `--cek`, `--sil`, `--saglik`, `--otomasyon-kur`, `--otomasyon-kaldir`, `--otomatik`, `--ayarlar` | `--sil`, `--otomasyon-*` ve `--secili` ile zorunlu; `--cek`, `--saglik`, `--ayarlar` ve `--otomatik` ile opsiyonel | `--tasima`, `--ekle`, `--durum`, `--listele` ile exit 2 |
 | `--gunler`, `--saat` | `--otomasyon-kur` | Opsiyonel (varsayılan `PZT` / `09:00`) | Başka modda exit 2 |
 | `--kuru` | `--tasima`, `--cek` | Opsiyonel | Bu modlar dışında exit 2 |
 | `--onayla` | `--tasima`, `--sil` | `--sil` ile zorunlu | `--kuru` ile birlikte exit 2 (kuru çalışmada onayın etkisi yok) |
 | `--otomatik` | Bağımsız mod (zamanlanmış koşu) veya `--cek` | `--cek` ile birlikte anlamsız değil, uyumlu | Diğer modlarda exit 2; görev eylemi dizesi dondurulmuştur |
 | `--sessiz` | Tüm modlar (`--surum` hariç) | Opsiyonel | `--surum` ile exit 2; `--json` ile birlikte JSON stdout'ta kalır |
-| `--json` (1.1) | `--durum`, `--listele`, `--cek`, `--saglik`, `--surum`, `--oto-tamamlama` | Opsiyonel | `--ayrintili` ile birlikte exit 2 (JSON şeması ayrıntı alanlarını taşır) |
+| `--json` (1.1) | `--durum`, `--listele`, `--cek`, `--saglik`, `--surum`, `--oto-tamamlama`, `--ayarlar` | Opsiyonel | `--ayrintili` ile birlikte exit 2 (JSON şeması ayrıntı alanlarını taşır) |
 | `--ayrintili` (2.4) | `--durum`, `--saglik` | Opsiyonel | Başka modda exit 2 |
 | `--ag` (2.2) | `--saglik` | Opsiyonel | Başka modda exit 2; `--ders` ile birlikte exit 2 |
 | `--zorla`, `--zorla-md` (2.1) | `--cek`, `--otomatik` | Opsiyonel | Başka modda exit 2; `--zorla` verildiğinde md de yeniden üretilir |
@@ -104,6 +105,8 @@ Bir dilim, bu kontroller ve ilgili kabul kriterleri geçmeden "tamamlandı" say�
 | `--log` (3.4) | Tüm modlar (`--surum` hariç) | Opsiyonel | `--surum` ile exit 2 |
 | `--surum` | Mod gerektirmez | Tek başına veya yalnız `--json` ile | Diğer bayraklarla birlikte exit 2 |
 | `--oto-tamamlama` (3.5) | Bağımsız mod | — | `--json` desteklenir; diğer modlarla exit 2 |
+| `--ayarlar` (4.1) | Bağımsız mod | — | `--ders` opsiyonel; `--secili` ve `--json` desteklenir; diğer modlarla exit 2 |
+| `--secili` (4.1) | `--ayarlar` | `--ders` zorunlu | Başka modda exit 2; değer kümesi `evet|hayir` |
 
 * Uygulama yaklaşımı: `add_mutually_exclusive_group` kullanılmaz (hata metinleri İngilizce kalır); `parse_args` sonrası, her türlü yan etkiden önce çalışan saf `_dogrula(secenekler)` işlevi mod dışlamasını ve bayrak-mod matrisini tablo üzerinden denetler (Türkçe mesaj + exit 2). `ArgumentParser.error` yalnızca desteklenen ayrıştırma hata sınıflarını (bilinmeyen bayrak, eksik değer, geçersiz tamsayı/seçenek) belirlenmiş Türkçe şablonlara çevirir; eşlenemeyen mesajda jenerik Türkçe metin + ayrıntı yazılır ve özgün İngilizce metin kullanıcıya gösterilmez.
 * Kabul kriteri: Tablodaki her satır için en az bir geçerli ve bir geçersiz kombinasyon kontrol edilir; geçersizlerde exit 2 + stderr mesajı, hiçbir yan etki yok; `--sessiz` verilse bile kullanım hatası stderr'e yazılır.
@@ -173,6 +176,25 @@ Bir dilim, bu kontroller ve ilgili kabul kriterleri geçmeden "tamamlandı" say�
 
 * `--oto-tamamlama` ile PowerShell/bash tamamlama betiği üretimi.
 
+## Öncelik 4 - CLI Ayar Görünümü ve Seçim (0.1.3)
+
+Sol danışma kararı (2026-09-22) doğrultusunda tek dilimde uygulanır.
+
+### 4.1 `--ayarlar` ve `--secili`
+
+* Amaç: Ders ayarlarını (ad, depo, dal, desen, seçili durumu, otomasyon özeti) CLI'dan salt-okunur görüntülemek ve çekilme işaretini güvenli biçimde değiştirmek; TUI "Ayarlar" ekranıyla aynı ortak işlevi paylaşmak.
+* Davranış:
+  * `--ayarlar`: tüm dersleri gösterir; `--ders <kimlik>` yalnız o dersi gösterir; ağ çağrısı, PowerShell görevi, indirme ve yazım yapmaz.
+  * `--ayarlar --ders <kimlik> --secili evet|hayir`: seçim işaretini değiştirir (mutex, atomik yazım, tek nesil yedek zinciri); `--ders` yoksa exit 2; bilinmeyen ders exit 2; bozuk `ayarlar.json` karantinaya alınmaz, exit 1.
+  * `--json` desteklenir: `{json_surum, komut:"ayarlar", uygulama_surum, dersler:[{kimlik, ad, depo, dal, desen, secili, otomasyon:{aktif, gunler, saat}}]}`. Mutasyon sonrası yeni durum döner.
+  * `--sessiz` insan-okur çıktıyı bastırır; JSON stdout'ta kalır. `--ayrintili` ile birlikte exit 2; `--otomatik`, `--sil` ve diğer modlarla birlikte exit 2.
+* Güvenli ortak işlev: `ayarlar.secili_ayarla(slug, secili)` fail-closed çalışır (`yukle_salt` + kilit + `kaydet`); mevcut `ayarlar.isaretle` bunu çağırır, TUI aynı yolu kullanır.
+* Kabul kriteri: `--ayarlar` sonrası dosya/görev/ağ izi yok; `--secili hayir` sonrası `--cek --ders X` dersin seçili olmadığını raporlar (exit 0, atlanan=1); `--secili evet` ile geri alınır; bozuk ayarda görünüm ve mutasyon dosyayı değiştirmez.
+* Doğrulama: matris çiftleri, JSON şeması, yan etkisizlik anlık görüntüsü, bozuk ayar, kilit senaryosu, TUI ortak işlev kontrolü.
+* Risk: Düşük; yalnızca `secili` alanı değişir, görev eylemi ve otomasyon ayarları değişmez.
+* Sol denetimi (0.1.3): `belgeler/gecmis/sol-denetim-2026-09-22-0.1.3.md`; tur 1'de 3 orta + 2 düşük bulgu açıldı ve kapatıldı, tur 3'te `SONUC: ONAY` alındı.
+* Kanıt (2026-09-22): geçici kopyada 418/418 kontrol (204 birim/akış + 153 fonksiyon kapsamı + 47 uçtan uca + 14 tetikleme/sahiplik); `trace` koşusunda 133/133 fonksiyon çağrıldı, ifade satırı kapsamı %81. Gerçek proje kapısı: `--ayarlar` ve `--ayarlar --ders ... --json` salt-okunur; `--cek --sessiz` atlanan=1; `--durum` Ready; üretim seçimi ve görevi değişmedi.
+
 ## Uygulama Sırası (revize)
 
 0. Altyapı dilimi: parser kurulumunun `arguman_ayristirici()` işlevine taşınması; `merkez.__version__` tek kaynak ve `UA` türetimi; çıktı/kanal politikası ve JSON serileştirme noktası; Türkçe ayrıştırma hata eşleme katmanı; `_dogrula` iskeleti ve tablo tabanlı test altyapısı.
@@ -182,6 +204,7 @@ Bir dilim, bu kontroller ve ilgili kabul kriterleri geçmeden "tamamlandı" say�
 4. Sağlık dilimi: `--saglik`, `--ag`, `--durum --ayrintili` (ağ gating ve salt-okunurluk kanıtlarıyla).
 5. Otomasyon dilimi: `--tetikle`, gün kısayolları, `--log`.
 6. Tamamlama dilimi: parser kaynaklı `--oto-tamamlama`, `.gitignore` girdisi.
+7. Ayar dilimi (0.1.3): `--ayarlar` görünümü ve `--secili` ile seçim değişikliği (matris, eşlik, test ve doküman aynı dilimde).
 
 Her dilim bağımsız doğrulanabilir ve geri alınabilir; matris, JSON şeması, dokümantasyon ve "Eşlik Listesi" gereği CLI yüzeyi ile TUI bağlantıları ve arayüz eşliği kabul kontrolleri ilgili dilimle aynı değişiklikte tamamlanır. Her dilimde `AGENTS.md` "Doğrulama Kapısı" uygulanır; girdi doğrulaması ve çıkış kodu davranışı değişen dilimlerde birim/akış kontrolleri yeniden koşulur ve Sol denetimine sunulur.
 
@@ -195,6 +218,7 @@ Her dilim bağımsız doğrulanabilir ve geri alınabilir; matris, JSON şeması
 * bash/zsh kabuk tamamlama ve dinamik (slug/depo) tamamlama değerleri (v1 yalnız PowerShell ve bayrak tamamlama).
 * `--ayrintili` seçeneğinin `--listele` ile kullanımı.
 * argparse karşılıklı dışlama grubuyla İngilizce hata metni üretimi (Türkçe kural gereği kullanılmaz).
+* `--ders-guncelle` (ad/depo/dal/desen güncelleme): durum dosyaları, slug kimliği ve geri alma politikası ayrı tasarım gerektirir; v1 kapsam dışıdır.
 
 ## Riskler
 

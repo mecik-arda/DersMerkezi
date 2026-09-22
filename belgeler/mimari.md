@@ -10,7 +10,7 @@ DersMerkezi, Windows masaüstünde çalışan Python + Rich tabanlı çok dersli
 
 * `dersmerkezi.py`: Giriş noktası; mod işleyicileri, çıkış kodları (0 başarı, 1 hata, 2 kullanım hatası) ve TUI başlatma.
 * `merkez/komut.py`: Argüman ayrıştırıcı (`arguman_ayristirici`), mod/bayrak matrisi (`dogrula`), JSON çıktı sözleşmesi (`kok_json`, `json_yaz`, `hata_json_yaz`) ve Türkçe ayrıştırma hata eşlemesi.
-* `merkez/ayarlar.py`: `ayarlar.json` şeması (sürüm 1), doğrulama (slug, ad, depo/URL, dal, desen, saat, gün, dosya adı; `veri_dogrula`/`ders_dogrula` salt-okunur doğrulama), atomik yazım ve tek nesil yedek.
+* `merkez/ayarlar.py`: `ayarlar.json` şeması (sürüm 1), doğrulama (slug, ad, depo/URL, dal, desen, saat, gün, dosya adı; `veri_dogrula`/`ders_dogrula`), `yukle_salt`/`gorunum` salt-okunur görünüm, `secili_ayarla` fail-closed seçim mutasyonu, atomik yazım ve tek nesil yedek.
 * `merkez/indirici.py`: GitHub Contents API listeleme (isteğe bağlı kota meta verisi), akışlı indirme (`.part`), Git blob SHA-1 doğrulama, Markdown üretimi, kuru/`zorla`/`zorla-md` modları, durum şeması sürüm 2.
 * `merkez/durum.py`: Ders ve görev durum kayıtları; isteğe bağlı ayrıntı (son çalışma, son sonuç, eylem, durum dosyası özeti); CLI ve TUI ortak.
 * `merkez/saglik.py`: Salt-okunur sağlık denetimi (ortam, ayar şeması, ders kayıtları, kilit, günlük/durum erişimi); `--ders`/`--ag`/`--ayrintili` ile sınırlı ağ ve görev sorgusu.
@@ -38,13 +38,14 @@ Zamanlanmış koşularda `pythonw.exe` ile `--otomatik --ders <kimlik> --sessiz`
 
 ## CLI Sözleşmeleri
 
-* **Mod matrisi:** Aynı anda en fazla bir mod (`--listele`, `--ekle`, `--sil`, `--cek`, `--durum`, `--saglik`, `--otomasyon-kur`, `--otomasyon-kaldir`, `--tasima`, `--surum`, `--oto-tamamlama`); `--otomatik` tek başına zamanlanmış koşu modudur veya `--cek` ile birleşir. Moda özgü seçenekler argparse'ta `None` varsayılanla tanımlanır; gerçek varsayılanlar doğrulama sonrası uygulanır. İhlalde stderr'e Türkçe mesaj + exit 2, hiçbir yan etki yoktur.
+* **Mod matrisi:** Aynı anda en fazla bir mod (`--listele`, `--ekle`, `--sil`, `--cek`, `--durum`, `--ayarlar`, `--saglik`, `--otomasyon-kur`, `--otomasyon-kaldir`, `--tasima`, `--surum`, `--oto-tamamlama`); `--otomatik` tek başına zamanlanmış koşu modudur veya `--cek` ile birleşir. Moda özgü seçenekler argparse'ta `None` varsayılanla tanımlanır; gerçek varsayılanlar doğrulama sonrası uygulanır. İhlalde stderr'e Türkçe mesaj + exit 2, hiçbir yan etki yoktur.
 * **Kanal politikası:** `--json` başarıda stdout'ta tek JSON nesnesi (`json_surum`, `komut`, `uygulama_surum`); çalışma hatasında stdout boş, stderr'de JSON hata nesnesi + insan satırı; kullanım hatasında düz Türkçe. JSON modunda `gunluk.kayit` insan metnini stderr'e yazar; global çıktı durumu `main` içinde `try/finally` ile geri yüklenir.
 * **Kuru çalışma:** `--cek --kuru` hedef klasör oluşturmaz, `.part`/geçici dosya silmez, durum dosyası yazmaz ve bozuk durumu karantinaya almaz; yalnız listeleme + yerel boyut/SHA karşılaştırması yapar, planlanan baytı raporlar.
 * **Sağlık:** Varsayılan ağsız ve salt-okunur; hiçbir dosya/dizin/yedek/günlük oluşturmaz. Ağ yalnız `--ders` (tek çağrı) veya `--ag` (ilk 10 ders) ile; görev sorgusu yalnız `--ders`/`--ayrintili` (en fazla 20 ders) ile yapılır. Kota meta verisi `depo_listele(meta=True)` üzerinden `limit/kalan/sifirla` olarak döner.
 * **Tetikleme:** `--tetikle` yalnız kurulum başarısından sonra çalışır; öncesinde tek-eylem sahipliği yeniden doğrulanır (sorgu hatası fail-closed, yabancı görev başlatılmaz). Tamamlanma ölçütü: durum `Running`/`Queued` dışına çıkar ve `LastRunTime` referanstan yenidir; 60 sn zaman aşımında koşul teşhisi yazılır ve exit 1 döner.
 * **Günlük yolu:** `--log` hedefi `realpath` ile kök içinde olmalı, mevcut dizin veya reparse noktası olamaz; her yazımdan önce yeniden doğrulanır ve 1 MB `.old` rotasyonu korunur.
-* **Arayüz eşliği:** CLI ve TUI aynı ortak işlevleri çağırır (`indirici.indir_ders`, `zamanlayici.gorev_kur_guvenli`, `zamanlayici.gorev_tetikle`, `zamanlayici.ders_sil_guvenli`, `durum.kayitlar`, `saglik.denetle`); 0/1/2 yalnızca CLI süreç sonucudur, TUI hata sınıflarını Türkçe iletiye dönüştürüp menü döngüsünü korur.
+* **Ayar görünümü/seçim:** `--ayarlar` salt-okunur görünüm (`ayarlar.gorunum`, `yukle_salt`) ve `--secili` mutasyonu (`ayarlar.secili_ayarla`) bozuk ayarda karantina yapmaz; mutasyon kilit + atomik yazım + yedek zincirini kullanır; görünüm ağ/görev/indirme izi bırakmaz.
+* **Arayüz eşliği:** CLI ve TUI aynı ortak işlevleri çağırır (`indirici.indir_ders`, `zamanlayici.gorev_kur_guvenli`, `zamanlayici.gorev_tetikle`, `zamanlayici.ders_sil_guvenli`, `durum.kayitlar`, `saglik.denetle`, `ayarlar.gorunum`, `ayarlar.secili_ayarla`); 0/1/2 yalnızca CLI süreç sonucudur, TUI hata sınıflarını Türkçe iletiye dönüştürüp menü döngüsünü korur.
 
 ## Şemalar
 
