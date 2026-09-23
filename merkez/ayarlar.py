@@ -23,7 +23,7 @@ AD_YASAK = re.compile(r"[^\w .,()!+-]")
 AYGIT_ADLARI = {"CON", "PRN", "AUX", "NUL"} | {"COM%d" % i for i in range(1, 10)} | {"LPT%d" % i for i in range(1, 10)}
 KAYNAKLAR = ("github", "teams")
 TEAMS_ID_DESENI = re.compile(r"^[A-Za-z0-9._!-]{8,200}$")
-TEAMS_TENANT_DESENI = re.compile(r"^[A-Za-z0-9.-]{2,128}$")
+TEAMS_TENANT_DESENI = re.compile(r"^(?![.-])(?!.*\.\.)(?!.*[.-]$)[A-Za-z0-9.-]{2,128}$")
 TEAMS_OZET_UZUNLUK = 6
 
 TR_HARF = str.maketrans({
@@ -86,12 +86,16 @@ def kaynak_coz(kayit):
     return kaynak
 
 
-def _kisalt(deger):
+def teams_kimlik_kisalt(deger):
     deger = str(deger or "")
     if not deger:
         return ""
     kes = min(TEAMS_OZET_UZUNLUK, max(0, len(deger) - 1))
     return deger[:kes] + "…"
+
+
+def _kisalt(deger):
+    return teams_kimlik_kisalt(deger)
 
 
 def teams_ozeti(teams):
@@ -101,7 +105,7 @@ def teams_ozeti(teams):
     item = str(teams.get("itemId", "") or "").strip()
     if not drive or not item:
         return None
-    return "teams:{}/{}".format(_kisalt(drive), _kisalt(item))
+    return "teams:{}/{}".format(teams_kimlik_kisalt(drive), teams_kimlik_kisalt(item))
 
 
 def teams_dogrula(kayit, kaynak):

@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.2.0 - 2026-09-23
+
+### Eklendi
+
+* Microsoft Teams/SharePoint kanal dosyaları için Graph client-credentials istemcisi; `TEAMS_TENANT_ID`, `TEAMS_CLIENT_ID` ve `TEAMS_CLIENT_SECRET` ortam değişkenleriyle kimlik doğrulama.
+* Teams klasör listeleme/sayfalama, çocuk öğe kimliğiyle indirme, QuickXorHash ve SHA-1 sağlayıcı doğrulaması; yalnız açık ders ayarıyla eTag ve yerel SHA-256 tabanlı zayıf doğrulama.
+* CLI/TUI kaynak seçimi, Teams sağlık yoklaması, redakte kaynak görünümleri ve `--cek --json` zayıf doğrulama sayacı.
+
+### Güvenlik
+
+* Graph sayfalama bağlantıları HTTPS/köken/yol sınırlarında doğrulanır. Ön kimlikli indirme yönlendirmeleri yalnız izinli Microsoft depolama alan adlarına gider ve Authorization başlığı taşımaz; bu URL'ler hata, günlük, durum kaydı ve Markdown'a yazılmaz.
+* Teams kimlikleri yalnız `ayarlar.json` içinde saklanır; görünümlerde ve `teams://` kaynak gösteriminde kısaltılır. `ayarlar.json` sürümü 1 ve indirme durumu sürüm 2 olarak kaldı.
+
+### Doğrulama
+
+* Geçici kopya regresyon paketi 422/422 (206 birim/akış + 155 kapsam + 47 uçtan uca + 14 tetikleme/sahiplik); T0 şema/CLI/görünüm/sağlık paketi 199 kontrol; T1 Graph güvenlik ve QuickXor karşılaştırma paketi 218 kontrol; T2 Graph sahte yanıt/idempotans paketi 39 kontrol.
+* Gerçek proje kapısı: `compileall` exit 0; `--cek --ders dosya-organizasyonu --sessiz` exit 0 (`atlanan=2`); `--durum` (`Ready`); `--surum` `DersMerkezi 0.2.0`; `--ayarlar --json` başarılı. GitHub anonim API kotası yenilendikten sonra çekme/E2E kapısı tekrarlandı ve geçti.
+* Yerel T1-T3 testleri sahte Graph yanıtları ve bağımsız QuickXor referansıyla geçti. Bu ortamda Teams Entra kimlik bilgileri bulunmadığından gerçek tenant tokenı/Teams test göreviyle kimlik doğrulama yapılmadı; işletimsel canlı kabul için kullanıcı ortam değişkenleriyle doğrulama gerekir.
+
 ## 0.1.5 - 2026-09-22
 
 ### Eklendi

@@ -7,7 +7,8 @@ if str(KOK) not in sys.path:
 
 from merkez import __version__, ayarlar, arayuz, durum, gunluk, indirici, komut, saglik, tamamlama, tasima, zamanlayici
 
-RAPOR_ALANLARI = ("yeni", "guncellenen", "atlanan", "baglam", "dogrulama_hatasi", "donusum_hatasi", "hatalar", "planlanan_bayt")
+RAPOR_ALANLARI = ("yeni", "guncellenen", "atlanan", "baglam", "dogrulama_hatasi", "donusum_hatasi",
+                  "zayif_dogrulama", "hatalar", "uyarilar", "planlanan_bayt")
 
 
 def _gunler(secenekler):
@@ -22,7 +23,8 @@ def _gunler(secenekler):
 
 def _bos_rapor(anahtar, hata=None):
     rapor = {"anahtar": anahtar, "hedef": "", "yeni": 0, "guncellenen": 0, "atlanan": 0, "baglam": 0,
-             "dogrulama_hatasi": 0, "donusum_hatasi": 0, "hatalar": [], "planlanan_bayt": 0}
+             "dogrulama_hatasi": 0, "donusum_hatasi": 0, "zayif_dogrulama": 0,
+             "hatalar": [], "uyarilar": [], "planlanan_bayt": 0}
     if hata:
         rapor["hatalar"].append(hata)
     return rapor
@@ -30,7 +32,7 @@ def _bos_rapor(anahtar, hata=None):
 
 def _toplamlar(raporlar):
     toplam = {"yeni": 0, "guncellenen": 0, "atlanan": 0, "baglam": 0,
-              "dogrulama_hatasi": 0, "donusum_hatasi": 0, "planlanan_bayt": 0}
+              "dogrulama_hatasi": 0, "donusum_hatasi": 0, "zayif_dogrulama": 0, "planlanan_bayt": 0}
     for rapor in raporlar:
         for alan in toplam:
             toplam[alan] += int(rapor.get(alan) or 0)
@@ -49,16 +51,18 @@ def _cek(anahtarlar, otomatik=False, kuru=False, zorla=False, zorla_md=False, us
             raporlar.append(_bos_rapor(anahtar, str(hata)))
             hata_var = True
             continue
-        gunluk.kayit("BILGI", "{}: yeni={} guncellenen={} atlanan={} baglam={} dogrulama_hatasi={} donusum_hatasi={}".format(
+        gunluk.kayit("BILGI", "{}: yeni={} guncellenen={} atlanan={} baglam={} dogrulama_hatasi={} donusum_hatasi={} zayif_dogrulama={}".format(
             anahtar, rapor["yeni"], rapor["guncellenen"], rapor["atlanan"], rapor["baglam"],
-            rapor["dogrulama_hatasi"], rapor["donusum_hatasi"]))
+            rapor["dogrulama_hatasi"], rapor["donusum_hatasi"], rapor.get("zayif_dogrulama", 0)))
         for mesaj in rapor["hatalar"]:
+            gunluk.kayit("UYARI", "{}: {}".format(anahtar, mesaj))
+        for mesaj in rapor.get("uyarilar", []):
             gunluk.kayit("UYARI", "{}: {}".format(anahtar, mesaj))
         if rapor["dogrulama_hatasi"] or rapor["donusum_hatasi"]:
             hata_var = True
         kayit = {"anahtar": anahtar, "hedef": rapor.get("hedef", "")}
         for alan in RAPOR_ALANLARI:
-            if alan == "hatalar":
+            if alan in ("hatalar", "uyarilar"):
                 kayit[alan] = list(rapor.get(alan) or [])
             else:
                 kayit[alan] = int(rapor.get(alan) or 0)

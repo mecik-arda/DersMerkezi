@@ -3,7 +3,7 @@ import json
 import os
 import sys
 
-from . import ayarlar, gunluk, indirici, zamanlayici
+from . import ayarlar, gunluk, indirici, teams, zamanlayici
 
 PAKETLER = ("rich", "requests", "pypdf")
 AG_DERS_SINIRI = 10
@@ -123,7 +123,14 @@ def denetle(ders=None, ag=False, ayrintili=False):
     for kimlik in ag_dersler:
         kayit = veri["dersler"][kimlik]
         if ayarlar.kaynak_coz(kayit) == "teams":
-            ekle("uyari", "ağ:" + kimlik, "Teams ağ sağlık denetimi T3 diliminde etkinleşecek")
+            teams_kaydi = kayit.get("teams") or {}
+            try:
+                token = teams.token_al(teams_kaydi.get("tenantId"))
+                teams.yetki_yokla(teams_kaydi.get("driveId"), teams_kaydi.get("itemId"), token)
+            except teams.TeamsHatasi as hata:
+                ekle("sorun", "kaynak:teams:" + kimlik, str(hata))
+            else:
+                ekle("ok", "kaynak:teams:" + kimlik, "Teams klasörü erişilebilir")
             continue
         github_ag_dersler.append(kimlik)
         try:

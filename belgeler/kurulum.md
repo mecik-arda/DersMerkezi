@@ -55,11 +55,11 @@ python dersmerkezi.py --cek --zorla --sessiz
 python dersmerkezi.py --cek --kilit-bekle 60 --sinir 100
 ```
 
-* İçerikler `dersler/<kimlik>/` altına indirilir; dosyalar Git blob SHA-1 ile doğrulanır.
+* İçerikler `dersler/<kimlik>/` altına indirilir; GitHub dosyaları Git blob SHA-1, Teams dosyaları sağlayıcı QuickXorHash/SHA-1 ile doğrulanır. Hash yoksa dosya varsayılan olarak reddedilir.
 * Her PDF için aynı adlı bir Markdown bağlam dosyası üretilir (`Hafta 1.md` gibi).
-* İkinci koşuda yerel dosyalar yeniden doğrulanır; sağlamsa yeniden indirilmez (`atlanan=1`).
+* İkinci koşuda yerel dosyalar kayıtlı doğrulama yöntemine göre yeniden doğrulanır; sağlamsa yeniden indirilmez (`atlanan` artar).
 * `--kuru` hiçbir dosya yazmaz (hedef klasör, `.part` ve durum dosyası dâhil); planlanan yeni/güncellenecek/atlanan sayıları ve indirilecek toplam bayt raporlanır.
-* `--zorla` indirmeyi ve bağlamı, `--zorla-md` yalnız bağlamı yeniler; SHA ve `md_sha`/`md_boyut` doğrulaması her durumda uygulanır.
+* `--zorla` indirmeyi ve bağlamı, `--zorla-md` yalnız bağlamı yeniler; kaynak sağlayıcısının desteklenen hash doğrulaması ve `md_sha`/`md_boyut` denetimi uygulanır.
 * `--sinir 1-200` aralığında yalnız düşürülebilir; varsayılan 200 MB.
 * `--kilit-bekle 0-3600` saniye: kilit doluyken sınırlı bekler, alınamazsa uyarıyla atlanır (exit 0).
 * 200 MB üstü dosyalar liste aşamasında reddedilir.
@@ -75,7 +75,7 @@ python dersmerkezi.py --saglik --ayrintili
 ```
 
 * Varsayılan çağrı ağ kullanmaz: Python/paket sürümleri, `ayarlar.json` şeması, ders kayıtları, kilit durumu, günlük ve durum dosyası erişimi denetlenir; hiçbir dosya oluşturulmaz veya değiştirilmez.
-* `--ders` yalnız o ders için tek depo çağrısı yapar (kota bilgisi yanıttan okunur); `--ag` ilk 10 dersi listeler, atlananları raporlar; `--ag` ile `--ders` birlikte kullanılamaz.
+* `--ders` yalnız o dersin kaynağını denetler: GitHub için tek depo/kota çağrısı, Teams için token ve tek klasör yoklaması. `--ag` ilk 10 dersi kaynaklarına göre denetler; `--ag` ile `--ders` birlikte kullanılamaz.
 * `--ayrintili` görev sorgularını ekler (ağsız, en fazla 20 ders).
 * Sorun yoksa exit 0 (uyarılar 0'ı değiştirmez), en az bir sorun varsa exit 1.
 
@@ -91,6 +91,7 @@ python dersmerkezi.py --surum --json
 * `--json` şu modlarla geçerlidir: `--durum`, `--listele`, `--cek`, `--saglik`, `--surum`, `--oto-tamamlama`, `--ayarlar`.
 * Başarılı koşuda stdout yalnızca tek JSON nesnesi içerir (`json_surum`, `komut`, `uygulama_surum`); insan-okur metinler stderr'e gider.
 * Çalışma hatasında (exit 1) stderr'e `{json_surum, komut, hata:{sinif, mesaj}}` ve insan satırı yazılır, stdout boş kalır. Kullanım hatası (exit 2) düz Türkçe metindir, JSON içermez.
+* `--cek --json` toplamlarında `zayif_dogrulama` sayacı ve ders başına `uyarilar[]` bulunur; zayıf doğrulama açıkça ayarlanmışsa uyarı sayacı artar ancak tek başına exit 1 üretmez.
 * `--json` ile `--ayrintili` birlikte kullanılamaz.
 
 ### Zamanlanmış görev
@@ -124,20 +125,27 @@ python dersmerkezi.py --ayarlar --json
 * `--json` çıktısı `{json_surum, komut, uygulama_surum, dersler[]}`; mutasyon sonrası yeni durum döner. Her ders kaydı `kaynak` alanı taşır (`github` veya `teams`); Teams kaydında tam kimlikler yerine redakte edilmiş `teams.ozet` gösterilir (`teams:b!2SIn…/01H7C…` biçimi). `--sessiz` yalnız insan-okur satırları bastırır, JSON stdout'ta kalır.
 * TUI'deki "Ayarlar" ekranı aynı ortak işlevi (`ayarlar.secili_ayarla`) kullanır.
 
-### Teams kaynağı (0.2.0 hazırlığı)
+### Teams kaynağı (0.2.0)
 
-Ders kaydı GitHub'a ek olarak Microsoft Teams/SharePoint kaynağını destekler. Bu dilimde (T0) kayıt, ayar ve görünüm hazırdır; Teams kaynağıyla içerik çekme sonraki dilimde (T2) etkinleşecektir. Teams dersiyle `--cek` çağrısı bu sürümde anlaşılır Türkçe hatayla exit 1 döner.
+Ders kaydı GitHub'a ek olarak Microsoft Teams kanal dosyalarını (SharePoint belge kitaplığı) Graph app-only client-credentials akışıyla listeler ve indirir. Uygulama kaydı, `Files.Read.All` izni ve yönetici onayı Microsoft Entra tarafında tamamlanmalıdır.
 
 ```powershell
 python dersmerkezi.py --ekle --ad "Ornek Ders" --kaynak teams --teams-drive "b!..." --teams-item "01ABC..." [--teams-tenant "<tenant>"]
 python dersmerkezi.py --ekle --ad "Ornek Ders 2" --kaynak teams --teams-drive "b!..." --teams-item "01ABC..." --zayif-dogrulama
+python dersmerkezi.py --cek --ders ornek-ders --sessiz
+python dersmerkezi.py --saglik --ders ornek-ders --json
 ```
 
-* `--kaynak` varsayılanı `github`'dir; mevcut kayıtlar değişmeden çalışır.
+* `--kaynak` varsayılanı `github`'dir; kaynak alanı olmayan eski dersler GitHub kabul edilir ve ayarlar şeması sürüm 1 kalır.
 * `--kaynak teams` için `--teams-drive` ve `--teams-item` zorunludur; `--depo` kullanılamaz. GitHub/varsayılan kaynakta `--depo` zorunludur; Teams parametreleri kullanılamaz. Geçersiz birleşimler exit 2 verir ve ayarlar dosyasına iz bırakmaz.
-* `--teams-tenant` opsiyoneldir; verilmezse ortam değişkeni (`TEAMS_TENANT_ID`) kullanılır. Öncelik: ders kaydı > komut satırı > ortam değişkeni.
-* `--zayif-dogrulama` yalnız `--ekle --kaynak teams` ile kullanılır; bu dilimde tercih ayara kaydedilir, doğrulama davranışı T2'de uygulanır. Varsayılan kapalıdır; açıldığında risk uyarısı üretir. T2'de sağlayıcı hash'i yoksa boyut + eTag + yerel SHA-256 temelli sınırlı kabul yolunu etkinleştirecektir.
-* Tam kimlikler (tenant/drive/item) yalnız `ayarlar.json` içinde tutulur; `--ayarlar`, `--durum` ve `--listele` JSON çıktılarında ve insan-okur görünümlerinde yalnız redakte edilmiş `teams.ozet` kısaltması görünür; günlükte tam kimlik yazılmaz.
+* `--teams-tenant` opsiyoneldir; verilmezse `TEAMS_TENANT_ID` ortam değişkeni kullanılır. Öncelik: ders kaydı > ortam değişkeni.
+* `TEAMS_CLIENT_ID` ve `TEAMS_CLIENT_SECRET` yalnız ortam değişkenlerinde tutulur. `ayarlar.json`'a, durum dosyasına veya günlüğe yazılmazlar. Ortam değişkenlerini `setx` ile değiştirdikten sonra yeni terminal/görev süreçleri başlatın.
+* Zamanlanmış görev için de `TEAMS_TENANT_ID`, `TEAMS_CLIENT_ID` ve `TEAMS_CLIENT_SECRET` görevin çalıştığı Windows kullanıcı hesabında tanımlı olmalıdır.
+* Sağlayıcı QuickXorHash ve/veya SHA-1 sunuyorsa mevcut hash katmanlarının tümü doğrulanır. Hash yoksa varsayılan fail-closed davranışla dosya reddedilir.
+* `--zayif-dogrulama` yalnız `--ekle --kaynak teams` ile kullanılır; varsayılan kapalıdır. Açılırsa boyut, indirme öncesi/sonrası eTag ve yerel SHA-256 uygulanır; yalnız gerçekten hash bulunmayan dosyalarda uyarı ve `zayif_dogrulama` sayacı oluşur. Bu yol sağlayıcı hash doğrulamasıyla eşdeğer değildir.
+* TUI'de `Dersler` → `Yeni ders ekle` kaynağı seçtirir ve yalnız seçilen kaynağın alanlarını sorar; Teams için zayıf doğrulama risk uyarısıyla onaylanır.
+* Tam kimlikler yalnız `ayarlar.json` içinde tutulur; `--ayarlar`, `--durum` ve `--listele` JSON/insan görünümlerinde yalnız redakte edilmiş özet görünür. Durum ve Markdown'daki Teams kaynak URI'si de kısaltılmış kimlik kullanır. Ön kimlikli indirme URL'si hiçbir kalıcı alana veya günlüğe yazılmaz.
+* Graph sağlık yoklaması token + tek klasör isteği yapar. Gerçek Teams bağlantısını doğrulamak için `python dersmerkezi.py --saglik --ders <teams-slug>` kullanın.
 * Ortam değişkenleri (yalnız ortam değişkeni; dosyaya veya günlüğe yazılmaz):
 
 ```powershell

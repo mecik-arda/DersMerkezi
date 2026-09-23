@@ -2,7 +2,7 @@
 
 ![Kalite Kapısı](https://github.com/mecik-arda/DersMerkezi/actions/workflows/kalite-kapisi.yml/badge.svg)
 
-Windows masaüstünde çalışan, Python + Rich tabanlı çok dersli içerik çekme aracı. GitHub depolarına eklenen haftalık ders içeriklerini (ör. `Hafta N.pdf`) indirir, Git blob SHA-1 ile doğrular, pypdf ile Markdown bağlamına dönüştürür ve ders bazında haftalık Windows Görev Zamanlayıcı otomasyonu kurar. Teams/SharePoint kaynağı için T0 kapsamında ders kaydı ve ayar görünümü eklenmiştir; Teams indirmesi T2'de, sağlık yoklaması ve TUI eşliği T3'te etkinleşecektir.
+Windows masaüstünde çalışan, Python + Rich tabanlı çok dersli içerik çekme aracı. GitHub ve Microsoft Teams/SharePoint kaynaklarından haftalık ders içeriklerini indirir; sağlayıcı bütünlüğünü doğrular, pypdf ile Markdown bağlamı üretir ve ders bazında haftalık Windows Görev Zamanlayıcı otomasyonu kurar.
 
 Depo: <https://github.com/mecik-arda/DersMerkezi>
 Lisans: Apache-2.0 (bkz. `LICENSE`, `NOTICE`).
@@ -13,7 +13,7 @@ Lisans: Apache-2.0 (bkz. `LICENSE`, `NOTICE`).
 * `belgeler/mimari.md`: Modül haritası, veri akışı, şemalar, güvenlik değişmezleri.
 * `belgeler/plan/2026-09-21-dersmerkezi-cli.md`: Keşif/plan belgesi ve doğrulama kanıtları.
 * `belgeler/plan/2026-09-21-cli-gelistirme-onerileri.md`: CLI geliştirme önerileri (öncelikli; 0.1.2 ve 0.1.3 dilimleri uygulandı, Sol denetimli).
-* `belgeler/plan/2026-09-23-teams-kaynagi-destegi.md`: Teams kaynağı planı, T0 uygulama kanıtları ve sonraki dilimler.
+* `belgeler/plan/2026-09-23-teams-kaynagi-destegi.md`: Teams kaynağı planı, T0-T4 uygulama ve doğrulama kanıtları.
 * `belgeler/gecmis/`: Taşıma kanıtları ve Sol bağımsız denetim raporu.
 * `AGENTS.md`: Ajan/geliştirme kuralları ve bağlayıcı bağlam; `CHANGELOG.md`: sürüm kaydı.
 
@@ -28,16 +28,18 @@ Lisans: Apache-2.0 (bkz. `LICENSE`, `NOTICE`).
 ## Kullanım (TUI)
 
 * **Dersleri Çek:** İşaretli derslerin içeriklerini canlı yüzde çubuğuyla indirir ve bağlam üretir; menüden "Önizleme (kuru çalışma)" ve zorla yenileme seçilebilir. Kilit doluyken "Bekle/Atla" sorulur.
-* **Dersler:** Ders ekleme (ad, `owner/repo`, dal, desen), çıkarma, listeleme.
+* **Dersler:** Kaynak seçerek GitHub (`owner/repo`) veya Teams/SharePoint (`driveId`, klasör `itemId`) dersi ekleme, çıkarma, listeleme. Zayıf doğrulama tercihi risk uyarısı ve onayıyla açılır.
 * **Ayarlar:** Hangi derslerin çekileceğinin işaretlenmesi.
 * **Otomasyon Ayarla:** Ders bazında haftalık gün(ler) + saat seçimi; "Tümü"/"Hafta içi" kısayolları, görev kurma, "Kur ve hemen dene" ve kaldırma.
-* **Durum / Sağlık:** Görev durumu, son çalışma/sonuç, eylem ve durum dosyası özeti; ağsız veya ağlı sağlık kontrolü.
+* **Durum / Sağlık:** Görev durumu, son çalışma/sonuç, eylem ve durum dosyası özeti; kaynak türüne göre ağsız veya ağlı sağlık kontrolü.
 
 ## Komut Satırı (headless)
 
 * Ders ekleme: `python dersmerkezi.py --ekle --ad "Dosya Organizasyonu" --depo emirozturk/Dosya-Organizasyonu-2026`
-* Teams dersi kaydı (T0): `python dersmerkezi.py --ekle --ad "Ornek Ders" --kaynak teams --teams-drive "b!..." --teams-item "01ABC..." [--teams-tenant "<tenant>"]`
-* Teams kaydı yalnızca T0 kayıt/ayar desteğidir; bu sürümde Teams dersiyle `--cek`/`--otomatik` çağrısı kontrollü hata ve exit 1 verir. Graph indirme akışı T2'de etkinleşecektir. `--zayif-dogrulama` yalnız Teams kaydıyla verilebilir; tercih kayda yazılır ve risk uyarısı üretir.
+* Teams dersi ekleme: `python dersmerkezi.py --ekle --ad "Ornek Ders" --kaynak teams --teams-drive "b!..." --teams-item "01ABC..." [--teams-tenant "<tenant>"]`
+* Teams dersini çekme: `python dersmerkezi.py --cek --ders ornek-ders --sessiz` (Graph app-only kimlik bilgileri ortam değişkenlerinde tanımlı olmalıdır).
+* Teams sağlık yoklaması: `python dersmerkezi.py --saglik --ders ornek-ders --json`.
+* `--zayif-dogrulama` yalnız Teams kaydıyla açıkça verilebilir; sağlayıcı hash'i olmayan dosyalarda eTag + boyut + yerel SHA-256 kullanır, uyarı ve sayaç üretir.
 * Listeleme: `python dersmerkezi.py --listele` / JSON: `python dersmerkezi.py --listele --json`
 * Ders silme: `python dersmerkezi.py --sil --ders dosya-organizasyonu --onayla` (onaysız çağrı exit 2; varsa görevi de kaldırır)
 * Çekme: `python dersmerkezi.py --cek --ders dosya-organizasyonu --sessiz`
@@ -67,9 +69,10 @@ Lisans: Apache-2.0 (bkz. `LICENSE`, `NOTICE`).
 * `dersmerkezi.py`: Giriş noktası (CLI argümanları ve TUI başlatma).
 * `merkez/komut.py`: Argüman ayrıştırıcı, mod/bayrak matrisi doğrulaması, JSON çıktı sözleşmesi ve Türkçe ayrıştırma hataları.
 * `merkez/ayarlar.py`: `ayarlar.json` şeması (sürüm 1), GitHub/Teams kaynak doğrulaması, Teams kimliklerinin redakte görünümü, atomik yazım.
-* `merkez/indirici.py`: GitHub Contents API listeleme (kota meta verisi), akışlı indirme, blob SHA doğrulama, Markdown dönüşümü ve kuru çalışma; T0'da Teams çekmesi T2'ye kadar fail-closed reddedilir.
+* `merkez/teams.py`: Microsoft Graph app-only istemcisi, sayfalama/yönlendirme denetimleri, ön kimlikli indirme koruması ve sağlayıcı hash hesaplamaları.
+* `merkez/indirici.py`: GitHub Contents ve Teams Graph listeleme, kaynak bazlı akışlı indirme/bütünlük doğrulama, Markdown dönüşümü, kuru çalışma ve durum/idempotans yönetimi.
 * `merkez/durum.py`: Ders/görev durum kayıtları ve ayrıntılı durum verisi (CLI + TUI ortak).
-* `merkez/saglik.py`: Ağsız varsayılan sağlık denetimi, isteğe bağlı GitHub depo/kota kontrolü; Teams için T0'da ağsız T3 uyarısı.
+* `merkez/saglik.py`: Ağsız varsayılan sağlık denetimi, isteğe bağlı GitHub depo/kota veya Teams Graph erişim kontrolü.
 * `merkez/tamamlama.py`: PowerShell tamamlama betiği üretimi.
 * `merkez/zamanlayici.py`: PowerShell köprüsü ile görev kurma, kaldırma, sorgulama, tetikleme ve sahiplik denetimli silme.
 * `merkez/tasima.py`: Eski otomasyonun güvenli sırayla taşınması (kanıt kayıtları, manifest doğrulaması).
@@ -86,8 +89,8 @@ Lisans: Apache-2.0 (bkz. `LICENSE`, `NOTICE`).
 
 * Durum dosyası: `dersler/<slug>/indirilenler.json` (şema sürümü 2; eski sürüm 1 kayıtları taşınır; `md_sha`/`md_boyut` alanları Markdown bütünlüğünü taşır).
 * GitHub depo adresi `owner/repo` ya da `https://github.com/owner/repo[.git]` biçiminde verilir; yalnızca GitHub HTTPS adresleri kabul edilir. Teams kayıtlarında güvenli karakter/uzunluk denetimli `driveId` ve `itemId` kullanılır; tam kimlikler görünüm ve günlüklerde gösterilmez.
-* İndirme: `raw.githubusercontent.com` üzerinden; dosya başına 200 MB sınırı (liste meta verisinde aşılırsa indirilmeden reddedilir); `.part` geçici dosyası SHA doğrulanmadan nihai ada taşınmaz.
-* Bütünlük: Git blob SHA-1 (`blob <boyut>\0<veri>`) karşılaştırması; ikinci koşuda yerel dosya yeniden doğrulanır; Markdown bağlamı `md_sha`/`md_boyut` ile doğrulanır, eksik veya bozuksa yeniden üretilir.
+* İndirme: GitHub `raw.githubusercontent.com`, Teams Microsoft Graph `/content`; dosya başına 200 MB sınırı (liste meta verisinde aşılırsa indirilmeden reddedilir); `.part` geçici dosyası bütünlük doğrulanmadan nihai ada taşınmaz.
+* Bütünlük: GitHub Git blob SHA-1 (`blob <boyut>\0<veri>`); Teams'te sunulan QuickXorHash ve SHA-1 katmanlarının tümü. Hashless dosya yalnız açık ders ayarıyla eTag/size ve yerel SHA-256 doğrulamasından geçebilir. İkinci koşuda yerel dosya yeniden doğrulanır; Markdown bağlamı `md_sha`/`md_boyut` ile doğrulanır, eksik veya bozuksa yeniden üretilir.
 * Eşzamanlılık: Aynı anda ikinci bir çalışma kilit nedeniyle atlanır; ayar, durum ve günlük yazımları `Local\DersMerkezi` kilidi altındadır.
 * Görevler: `DersMerkezi_<slug>` adıyla kurulur; `StartWhenAvailable`, `MultipleInstances IgnoreNew`, 30 dakika zaman aşımı, pilde de çalışır; zamanlanmış koşularda `pythonw.exe` kullanılır.
 * Ders silme: `--sil` (ve TUI ders çıkarma) varsa `DersMerkezi_<slug>` görevini önce kaldırır; görev kaldırılamazsa ders kaydı silinmez.

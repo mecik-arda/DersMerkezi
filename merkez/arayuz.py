@@ -126,13 +126,15 @@ def _cek_ekrani(anahtarlar, kuru=False, zorla=False, zorla_md=False, kilit=None)
 
                 try:
                     rapor = indirici.indir_ders(anahtar, ilerleme=geri_bildirim, kuru=kuru, zorla=zorla, zorla_md=zorla_md)
-                    ilerleme.update(gorev, completed=100, description="{}: tamam (yeni={} guncel={} atlanan={} baglam={} hata={})".format(
+                    ilerleme.update(gorev, completed=100, description="{}: tamam (yeni={} guncel={} atlanan={} baglam={} zayif={} hata={})".format(
                         escape(anahtar), rapor["yeni"], rapor["guncellenen"], rapor["atlanan"], rapor["baglam"],
-                        rapor["dogrulama_hatasi"] + rapor["donusum_hatasi"]))
+                        rapor.get("zayif_dogrulama", 0), rapor["dogrulama_hatasi"] + rapor["donusum_hatasi"]))
                     if kuru and rapor.get("planlanan_bayt"):
                         KONSOL.print("  [cyan]- indirilecek toplam: {} bayt[/cyan]".format(rapor["planlanan_bayt"]))
                     for hata in rapor["hatalar"]:
                         KONSOL.print("  [yellow]- {}[/yellow]".format(escape(str(hata))))
+                    for uyari in rapor.get("uyarilar", []):
+                        KONSOL.print("  [yellow]- {}[/yellow]".format(escape(str(uyari))))
                 except (indirici.IndirmeHatasi, RuntimeError, ValueError, OSError) as hata:
                     ilerleme.update(gorev, completed=100, description="{}: HATA".format(escape(anahtar)))
                     KONSOL.print("  [red]{}: {}[/red]".format(escape(anahtar), escape(str(hata))))
@@ -182,6 +184,7 @@ def _ders_tablosu(veri):
     tablo = Table(title="Dersler")
     tablo.add_column("Kimlik")
     tablo.add_column("Ad")
+    tablo.add_column("Kaynak")
     tablo.add_column("Depo")
     tablo.add_column("Cekilecek")
     tablo.add_column("Otomasyon")
@@ -191,7 +194,9 @@ def _ders_tablosu(veri):
             oto_metin = "{} {}".format(",".join(oto.get("gunler", [])), oto.get("saat", ""))
         else:
             oto_metin = "kapali"
-        tablo.add_row(escape(str(kimlik)), escape(str(ders.get("ad", ""))), escape(str(ders.get("depo", ""))),
+        kaynak = ayarlar.kaynak_coz(ders)
+        depo = ayarlar.teams_ozeti(ders.get("teams")) if kaynak == "teams" else str(ders.get("depo", ""))
+        tablo.add_row(escape(str(kimlik)), escape(str(ders.get("ad", ""))), escape(kaynak), escape(depo or ""),
                       "evet" if ders.get("secili", True) else "hayir", escape(oto_metin))
     return tablo
 
@@ -199,13 +204,32 @@ def _ders_tablosu(veri):
 def _ders_ekle_ekrani():
     KONSOL.clear()
     try:
+        kaynak = Prompt.ask("Kaynak (github/teams)", choices=["github", "teams"], default="github")
         ad = Prompt.ask("Ders adi")
-        depo = Prompt.ask("Depo (owner/repo)")
-        dal = Prompt.ask("Dal", default="main")
-        desen = Prompt.ask("Dosya deseni", default="Hafta*.pdf")
-        kimlik = ayarlar.ders_ekle(ad, depo, dal, desen)
+        depo = None
+        dal = "main"
+        desen = "Hafta*.pdf"
+        teams_kaydi = None
+        zayif_dogrulama = False
+        if kaynak == "github":
+            depo = Prompt.ask("Depo (owner/repo)")
+            dal = Prompt.ask("Dal", default="main")
+            desen = Prompt.ask("Dosya deseni", default="Hafta*.pdf")
+        else:
+            teams_kaydi = {
+                "driveId": Prompt.ask("Teams drive kimligi"),
+                "itemId": Prompt.ask("Teams klasor item kimligi"),
+            }
+            tenant = Prompt.ask("Teams tenant kimligi (bos birakilabilir)", default="")
+            if tenant:
+                teams_kaydi["tenantId"] = tenant
+            desen = Prompt.ask("Dosya deseni", default="Hafta*.pdf")
+            zayif_dogrulama = Confirm.ask(
+                "Risk uyarisi: saglayici hash'i yoksa zayif dogrulamaya izin verilsin mi?", default=False)
+        kimlik = ayarlar.ders_ekle(ad, depo, dal, desen, kaynak=kaynak, teams=teams_kaydi,
+                                   zayif_dogrulama=zayif_dogrulama)
         KONSOL.print("[green]Eklendi: {}[/green]".format(escape(kimlik)))
-    except (ValueError, OSError) as hata:
+    except (ValueError, RuntimeError, OSError) as hata:
         KONSOL.print("[red]{}[/red]".format(escape(str(hata))))
     _bekle_enter()
 
@@ -407,7 +431,12 @@ def durum_ekrani():
             satirlar.append("Ders sayisi: {}".format(len(kayitlar)))
             for kayit in kayitlar:
                 gorev = kayit["otomasyon"]["gorev"]
-                satirlar.append("{}: gorev={}".format(escape(str(kayit["kimlik"])), escape(str(gorev["durum"]))))
+                if kayit.get("kaynak") == "teams":
+                    ozet = (kayit.get("teams") or {}).get("ozet") or "teams"
+                    satirlar.append("{}: kaynak=teams {} gorev={}".format(
+                        escape(str(kayit["kimlik"])), escape(ozet), escape(str(gorev["durum"]))))
+                else:
+                    satirlar.append("{}: gorev={}".format(escape(str(kayit["kimlik"])), escape(str(gorev["durum"]))))
                 if gorev.get("sonCalisma"):
                     satirlar.append("  son calisma: {}".format(escape(str(gorev["sonCalisma"]))))
                 if gorev.get("sonSonuc") is not None:

@@ -1,7 +1,7 @@
 # DersMerkezi Teams Kaynağı Desteği - Keşif ve Plan
 
 Tarih: 2026-09-23
-Durum: Onaylandı (Sol Tur 10: ONAY); uygulama bekliyor
+Durum: T0-T4 kodu ve sahte Graph doğrulamaları tamamlandı; Sol T4 denetimi ONAY; canlı Graph kabulü ve sürüm etiketi Entra ortam değişkenlerine bağlı
 Kapsam: Mevcut GitHub akışına ek olarak Microsoft Teams kanal dosyalarını (SharePoint belge kitaplığı) ikinci kaynak türü olarak eklemek; mevcut yapıyı bozmadan.
 
 ## Amaç ve Özet
@@ -49,7 +49,7 @@ DersMerkezi bugün yalnız GitHub depolarından içerik çeker. Bu plan, ders ka
 * K10 200 MB: liste aşamasında `size` ile ön kontrol; akış sırasında ikinci kontrol; sağlayıcı boyut vermezse indirme sırasında `Content-Length` varsa onunla doğrulanır; başlık yoksa akış sırasında 200 MB sınırı bayt sayılarak uygulanır ve sınır aşılırsa indirme kesilir.
 * K11 Sağlık: kaynağa göre dallanır; Teams için hafif yetki yoklaması (token + klasör çocukları, tek çağrı); token eksikse anlaşılır Türkçe mesaj.
 * K12 Sürüm: dilim tamamlanınca 0.2.0; CHANGELOG, README, kurulum, AGENTS ve mimari güncellenir.
-* K13 Ön kimlikli indirme URL güvenliği: Graph `/content` yanıtındaki `Location` ön kimlikli ve kısa ömürlüdür. Yönlendirme yalnız HTTPS ve Microsoft ait barındırma alan adlarına izinli listeyle takip edilir; `Authorization` başlığı yönlendirilen isteğe TAŞINMAZ; ön kimlikli URL günlüğe, hata mesajına, `kaynak_url` durum alanına ve Markdown'a yazılmaz; kalıcı kayıtta yalnız kimlik bilgisi içermeyen kısaltılmış `teams://<driveId-kisa>/<itemId-kisa>/<dosya>` gösterimi kullanılır (JSON ve Markdown ile aynı kısaltma kuralı). URL ve sorgu dizisi tüm hata yollarında redakte edilir.
+* K13 Ön kimlikli indirme URL güvenliği: Graph `/content` yanıtındaki `Location` ön kimlikli ve kısa ömürlüdür. Yönlendirme yalnız HTTPS ve `1drv.com`, `sharepoint.com`, `sharepointonline.com`, `blob.core.windows.net` son eklerinden birine sahip Microsoft barındırma alan adlarına izinli listeyle takip edilir; `Authorization` başlığı yönlendirilen isteğe TAŞINMAZ; ön kimlikli URL günlüğe, hata mesajına, `kaynak_url` durum alanına ve Markdown'a yazılmaz; kalıcı kayıtta yalnız kimlik bilgisi içermeyen kısaltılmış `teams://<driveId-kisa>/<itemId-kisa>/<dosya>` gösterimi kullanılır (JSON ve Markdown ile aynı kısaltma kuralı). URL ve sorgu dizisi tüm hata yollarında redakte edilir.
 * K14 Görev hesabı ve işletim: Zamanlanmış görev eylemi değişmez; Teams sırları kullanıcı düzeyi ortam değişkenleriyle (`setx`) tanımlanır ve Task Scheduler bu ortamı miras alır. Gerçek kimlik doğrulama, test dersi + test göreviyle (üretim görevi değiştirilmeden) kabul testine bağlanır. Sır rotasyonu ve sona erme adımları belgelenir; üretimde istemci sırrı yerine sertifika/federatif kimlik bilgisi önerilir (Microsoft önerisi, kaynak aşağıda) ve istemci sırrı kullanımı açık risk kararı olarak kaydedilir. `Sites.Selected` seçilirse kaynak başına site ataması gerekir.
 
 ## Veri Modeli Örnekleri
@@ -80,7 +80,7 @@ DersMerkezi bugün yalnız GitHub depolarından içerik çeker. Bu plan, ders ka
 
 ## Kabul Kriterleri ve Doğrulama
 
-* Mevcut GitHub akışı regresyonsuz: mevcut 418/418 kontrol paketi ve gerçek kapı yeniden koşar; üretim görevi eylem dizesi değişmez.
+* Mevcut GitHub akışı regresyonsuz: genişletilmiş 422/422 regresyon paketi ve gerçek kapı yeniden koşar; üretim görevi eylem dizesi değişmez.
 * Teams mutlu yol: sahte Graph yanıtlarıyla listeleme → indirme → doğrulama yolları (`quickxor`, `sha1`, `quickxor+sha1`, açık `zayif`) → Markdown → durum kaydı; ikinci koşuda `atlanan=1`.
 * Hata yolları: 401/403 yetki, 429 `Retry-After`, boyut uyuşmazlığı, hash uyuşmazlığı (dosya taşınmaz, `dogrulama_hatasi`), 200 MB üstü, token yok.
 * Şema uyumu: kaynak alanı olmayan mevcut `ayarlar.json` karantinaya alınmaz; görünüm ve çekme çalışır.
@@ -88,33 +88,33 @@ DersMerkezi bugün yalnız GitHub depolarından içerik çeker. Bu plan, ders ka
 * Fail-closed doğrulama: sağlayıcı hash'i olmayan dosya varsayılan reddedilir; `zayif_dogrulama` yalnız açık işaretle etkinleşir ve sayaç/uyarı üretir; hash uyuşmazlığında nihai dosya oluşmaz.
 * İndirme güvenliği: ön kimlikli URL günlük/durum/Markdown'da yok; yönlendirmede Authorization taşınmaz; indirme isteği çocuk `id` ile kurulur (klasör `itemId` ile içerik istenmez).
 * Sayfalama: `nextLink` köken/yol/HTTPS denetiminden geçmeli; eksik/döngüsel/uyumsuz bağlantı fail-closed; liste tamamlanmadan indirme başlamaz.
-* İşletim: test göreviyle gerçek Teams kimlik doğrulaması (token alma) kurulumu doğrulanır; üretim görevi değişmez.
+* İşletim: gerçek Teams kimlik doğrulaması test dersi/test göreviyle doğrulanır; bu ortamda Entra kimlik bilgileri olmadığından bu kullanıcı kabul adımı beklemede, üretim görevi değişmemiştir.
 * Şema giriş kuralları: `zayif_dogrulama` yalnız `kaynak: teams` kayıtlarında kabul edilir; GitHub kaydında veya CLI'de `--kaynak` olmadan verilirse exit 2.
-* Dilim sınırı güvenliği: T0'da Teams kaydıyla `--cek`/`--otomatik` (kuru dâhil) çağrısı geçici korumayla net Türkçe hatayla reddedilir (exit 1, çökme yok, günlük/JSON kanalında hata); koruma T2'de kaldırılır ve T2 testi guard'ın yokluğunu doğrular.
-* Doğrulama yöntemi: geçici kopyada birim/akış paketleri + `trace` fonksiyon kapsamı + gerçek proje kapısı (`--cek --sessiz`, `--durum`, `--surum`); kanıtlar plan eki ve CHANGELOG'a işlenir.
+* Dilim sınırı güvenliği: T0'da Teams kaydıyla `--cek`/`--otomatik` (kuru dâhil) geçici korumayla reddedilmişti; T2'de guard kaldırıldı ve sahte Graph adaptör testleri gerçek Teams indirme dalını doğruluyor.
+* Doğrulama yöntemi: geçici kopyada birim/akış paketleri + `trace` kapsamı + gerçek proje kapısı (`--cek --sessiz`, `--durum`, `--surum`); test dosyaları repoya eklenmez, kanıtlar plan eki ve CHANGELOG'a işlenir.
 
 ## İş Kırılımı ve Kilometre Taşları
 
-* T0 (ayar dilimi): `kaynak`/`teams` doğrulaması, `gorunum`, matris ve özel kontroller, doküman iskeleti; testler. Not: `indirici.indir_ders` içine geçici bir Teams koruması eklenir ("Teams kaynağı bu sürümde indirme akışına bağlı değil" hatası, exit 1, fail-closed); bu koruma **T2'de kaldırılır** ve T2 kontrol listesinde izlenir. T0 test paketindeki guard kontrolü, T2'de guard'ın kaldırıldığını doğrulayacak biçimde güncellenir.
-* T1 (Graph istemcisi): token alma, listeleme, indirme (302 takibi), QuickXorHash/SHA1 yerel hesaplama, 200 MB akış kontrolü. Başlangıç notu: teams kimlik deseni gerçek bir Graph ID örneğiyle teyit edilir (tenant/drive/item); geçerli bir kimlik desen nedeniyle reddedilirse desen genişletilir ve T0 testi güncellenir.
-* T2 (indirici adaptörü + rapor/durum): kaynak dalları, rapor alanları, `atlanan` idempotansı; **T0 geçici Teams guard'ının kaldırılıp gerçek adaptöre bağlanması** (T0 testindeki guard kontrolü bu adımda güncellenir).
-* T3 (sağlık + TUI + JSON): kaynak dallı sağlık, tablo/ekleme ekranı, JSON şemaları.
-* T4 (kapanış): test paketleri, gerçek kapı, dokümanlar, sürüm 0.2.0, Sol denetimi.
+* T0 (ayar dilimi): tamamlandı; şema, CLI, redaksiyon, sağlık için kontrollü T3 yanıtı ve T2'ye kadar geçici indirme koruması uygulandı. Ayrıntılı kanıtlar aşağıdadır.
+* T1 (Graph istemcisi): tamamlandı; client-credentials token, 50 sayfa/10.000 öğe sınırlı listeleme, Graph yönlendirme denetimi, ön kimlikli indirme ve QuickXorHash/SHA1 hesaplaması uygulandı. Microsoft Graph örnek yanıtındaki `12319191!11919` item kimliğinin mevcut karakter/uzunluk deseninden geçtiği doğrulandı. Gerçek kiracı/drive örneği canlı ortam değişkenleri olmadığından doğrulanamadı. Graph güvenlik/QuickXor paketi 218/218 geçti.
+* T2 (indirici adaptörü + rapor/durum): tamamlandı; kaynak dalları, dosya/doğrulama sayaçları, `atlanan` idempotansı, Markdown/durum alanları ve T0 geçici guard'ının kaldırılması test edildi. Sahte Graph akış/idempotans paketi 39/39 geçti.
+* T3 (sağlık + TUI + JSON): tamamlandı; kaynak türüne göre sağlık, Teams için token + tek Graph yoklaması, TUI kaynak/kimlik alanları ve JSON sayaç/uyarı eşliği uygulandı.
+* T4 (kapanış): uygulama sürümü 0.2.0 ve CHANGELOG/README/kurulum/AGENTS/mimari belgeleri güncellendi; regresyon ve gerçek proje kapısı geçti; son Sol kod denetimi ONAY verdi. Canlı Graph tokenı ve test görevi kabulü bu geliştirme ortamında kimlik bilgileri tanımlı olmadığından doğrulanmadı; `v0.2.0` etiketi bu kullanıcı kabulinden sonra konacaktır.
 
 ## Riskler ve Azaltma
 
 * Şema karantinası: SURUM artırılmaz; isteğe bağlı alan; karantina regresyon testi.
 * Sır sızıntısı: yalnız ortam değişkeni, redaksiyon, token bellekte; testlerde sahte değer.
-* QuickXorHash doğruluğu: bağımsız vektörlerle doğrulanmadan T1 etkin sayılmaz; aksi halde T2/T3 ile ilerlenir ve sınırlama kaydedilir.
+* QuickXorHash doğruluğu: Microsoft algoritma açıklamasından türetilmiş ayrı bit düzeyi referansla çoklu uzunluk/parça sınırlarında doğrulanır; QuickXorHash kriptografik içerik özeti olarak sunulmaz.
 * Yönetici onayı/izin: kullanıcı adımı; `Files.Read.All` reddedilirse `Sites.Selected` alternatifi belgelenir.
 * Hız sınırlama: `Retry-After`; artan bekleme; sayfalama, indirme öncesi/sonrası meta veri ve indirme çağrıları dışında ek çağrı yapılmaz.
 * 200 MB/boyut eksikliği: `Content-Length` varsa doğrulama, yoksa akışta bayt sayımı; aşımda kesme (K10 ile uyumlu).
 
 ## Doğrulanamayan veya Açık Noktalar
 
-* QuickXorHash bağımsız test vektörü bu araştırmada bulunamadı; T1 için vektör temini veya karşılıklı iki bağımsız uygulamayla çapraz doğrulama gerekir.
-* Kiracı tarafında uygulama kaydı ve onay durumu bu ortamdan doğrulanamaz (kullanıcı adımı).
-* Zayıf kabul artık varsayılan değil; yalnız ders bazında açık `"zayif_dogrulama": true` işaretiyle etkinleşir. Bu işaretin kullanıcı tarafından istenip istenmeyeceği uygulama öncesi açık karardır (öneri: etkinleştirilmeden bırakılması).
+* Microsoft tarafından yayımlanmış QuickXorHash expected-output vektörü bulunamadı. T1 uygulaması Microsoft'un algoritma açıklamasından ayrı bit düzeyi referansla 16 veri uzunluğu ve beş akış parça boyutunda çapraz doğrulandı.
+* Kiracı tarafında uygulama kaydı ve yönetici onayı kullanıcı adımıdır; geliştirme ortamında Teams kimlik bilgileri tanımlı değil, canlı Graph tokenı ve test görevi kabulü yapılmadı.
+* Zayıf kabul varsayılan kapalıdır; yalnız ders bazında açık `"zayif_dogrulama": true` işaretiyle çalışır ve uyarı/sayaç üretir.
 
 ## Sınırlamalar ve Atlanan Adımlar
 
@@ -129,6 +129,7 @@ Doğrulanan (resmi doküman):
 * filesFolder: https://learn.microsoft.com/en-us/graph/api/channel-get-filesfolder
 * Çocuk listeleme ve izinler: https://learn.microsoft.com/en-us/graph/api/driveitem-list-children
 * İçerik indirme (302): https://learn.microsoft.com/en-us/graph/api/driveitem-get-content
+* DriveItem örnek kimliği (`12319191!11919`): https://learn.microsoft.com/en-us/graph/api/resources/driveitem
 * Hash türleri (quickXorHash; sha256Hash desteklenmiyor): https://learn.microsoft.com/en-us/graph/api/resources/hashes
 * QuickXorHash algoritması: https://learn.microsoft.com/en-us/onedrive/developer/code-snippets/quickxorhash
 * Hız sınırlama: https://learn.microsoft.com/en-us/graph/throttling
@@ -187,3 +188,12 @@ Tur 10 sonucu: kalan çelişki yok; plan uygulamaya hazır. Kullanıcı adımı:
 * Gerçek proje kapısı: `python -m compileall merkez dersmerkezi.py` exit 0; `--cek --ders dosya-organizasyonu --sessiz` exit 0, günlükte `yeni=0 guncellenen=0 atlanan=2 baglam=2`; `--durum` exit 0 ve görev `Ready`; `--surum` `DersMerkezi 0.1.5`; `--ayarlar --json` exit 0, mevcut GitHub alanları korunup `kaynak:"github"` eklendi. Üretim görevinin eylem koduna dokunulmadı; E2E üretim görevi kontrolü geçti.
 * GitHub anonim API kotasının dolduğu bir ara denemede ağ testleri geçici olarak başarısız oldu; kota yenilendikten sonra gerçek çekme kapısı ve E2E paketi başarıyla yeniden koştu. Son sonuçlar yukarıdaki sayılardır.
 * Sol salt-okunur kod denetimi: ilk turda Teams guard sırası ve insan-okur redaksiyon bulguları, ikinci turda T0 sağlık çökme riski, üçüncü turda `null` alan doğrulaması ve `--ekle` yardım metni bulguları düzeltildi. Son tur `SONUC: ONAY` verdi; rapor `belgeler/gecmis/sol-denetim-2026-09-23-0.2.0-t0.md`.
+
+## T4 Uygulama ve Doğrulama Kanıtları (2026-09-23)
+
+* Uygulama sürümü `0.2.0`; ayar şeması sürüm 1 ve indirme durumu sürüm 2 kaldı. `merkez/teams.py` app-only Graph istemcisi, güvenli sayfalama/yönlendirme, ön kimlikli indirme ve QuickXorHash/SHA-1 hesabını sağlar. `indirici` Teams akışı strong hash veya açık weak/eTag yoluyla son dosyayı atomik taşıma öncesi doğrular.
+* Graph ID desen kontrolünde Microsoft Graph `driveItem` dokümanındaki örnek item ID `12319191!11919` kabul edildi. QuickXorHash uygulaması resmi algoritma açıklamasından türetilmiş ayrı bit düzeyi referansla 16 veri uzunluğu × 5 parça boyutunda eşleştirildi; test koşuları geçiş kanıtı verir.
+* Geçici kopya son testleri: regresyon 422/422 (206 birim/akış + 155 kapsam + 47 uçtan uca + 14 tetikleme/sahiplik); T0 199/199; T1 Graph güvenlik/QuickXor 218/218; T2 sahte Graph adaptör/idempotans 39/39. Test dosyaları depoya eklenmedi.
+* Gerçek proje kapısı (`chcp 65001`): `python -m compileall merkez dersmerkezi.py` exit 0; `--cek --ders dosya-organizasyonu --sessiz` exit 0 (`atlanan=2`); `--durum` exit 0 ve görev `Ready`; `--surum` `DersMerkezi 0.2.0`; `--ayarlar --json` geçerli, GitHub kaydı additive ve bozulmamış. GitHub API kotası yenilendikten sonra çekme/E2E testleri başarıyla tekrarlandı.
+* `TEAMS_TENANT_ID`, `TEAMS_CLIENT_ID` ve `TEAMS_CLIENT_SECRET` bu geliştirme ortamında tanımlı değil. Bu nedenle gerçek Entra tokenı, canlı Teams erişimi ve ayrı test göreviyle işletim kabulü yapılmadı; Graph akışları sahte yanıtlarla doğrulandı. Canlı kabul kullanıcı ortam değişkenleri ve Entra uygulama izni/yönetici onayı gerektirir.
+* Son T4 Sol kod denetimi `SONUC: ONAY` verdi. İki ara bulgu (falsey bozuk hash'in weak doğrulamaya düşmesi; HTTP `Retry-After` tarihinin yerel saat diliminde yorumlanması) düzeltildi; nihai turda metadata `name` alanı eksik seçili Graph yanıtı, yönlendirme+retry bütçesi ve önceki bulgular yeniden doğrulandı. Rapor: `belgeler/gecmis/sol-denetim-2026-09-23-0.2.0-t4.md`.
