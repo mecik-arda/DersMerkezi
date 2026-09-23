@@ -525,3 +525,11 @@ Aşağıdaki kararlar uygulama sonrası Sol denetiminin (0.1.2) tur 1 bulguları
 * U6 (orta, eşlik listesi): Kapatıldı. TUI çekme akışına "Zorla yeniden indir" ve "Yalnız bağlamı yenile" seçenekleri, sağlık ekranına "Tek ders için ağ kontrolü" eklendi; CLI ve TUI aynı ortak işlevleri eşdeğer girdilerle çağırır (test kanıtı).
 * U7 (düşük, Rich kaçışı): Kapatıldı. Otomasyon detayındaki gün/saat/görev durumu ve görev kurulum satırları `rich.markup.escape` ile kaçışlanır; enjeksiyon testi eklendi.
 * U8 (düşük, üretilen betik): Kapatıldı. Tamamlama betiğindeki yorum satırı kaldırıldı; üretim parser kaynaklı ve atomik kalır (test kanıtı).
+
+
+### Public Sürüm ve CI Kanıtları (0.1.5)
+
+* Apache-2.0 lisansı (`LICENSE` kanonik metin, `NOTICE`) eklendi; README ve kuruluma lisans bölümü işlendi; GitHub lisansı `apache-2.0` olarak tanıdı.
+* Depo 2026-09-22'de public yapıldı: secret scanning, push protection, Dependabot güvenlik güncellemeleri ve özel güvenlik bildirimi etkin; "private" ifadeleri kaldırıldı, kullanıcıya dönük belgelerde kişisel yollar genelleştirildi (tarihsel kanıt dosyaları korundu).
+* Kalite Kapısı iş akışı (`.github/workflows/kalite-kapisi.yml`, `windows-latest` + Python 3.13) push/PR/elle tetiklemede koşar; adımlar: `compileall`, sürüm-CHANGELOG uyumu, `--ayarlar`/`--saglik` JSON sözleşmeleri, `-h` yüzeyi, geçersiz kombinasyonda exit 2. Koşular `success` (35770546137, 35770670950); action sürümleri Node 24 tabanına (`checkout@v5`, `setup-python@v6`) yükseltildi.
+* Sürüm etiketi: `v0.1.5` ve GitHub Release; secret taraması (içerik + geçmiş) temiz.

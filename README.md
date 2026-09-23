@@ -1,5 +1,7 @@
 # DersMerkezi
 
+![Kalite Kapısı](https://github.com/mecik-arda/DersMerkezi/actions/workflows/kalite-kapisi.yml/badge.svg)
+
 Windows masaüstünde çalışan, Python + Rich tabanlı çok dersli içerik çekme aracı. GitHub depolarına eklenen haftalık ders içeriklerini (ör. `Hafta N.pdf`) indirir, Git blob SHA-1 ile doğrular, pypdf ile Markdown bağlamına dönüştürür ve ders bazında haftalık Windows Görev Zamanlayıcı otomasyonu kurar.
 
 Depo: <https://github.com/mecik-arda/DersMerkezi>

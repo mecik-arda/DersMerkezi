@@ -330,3 +330,9 @@ Kabul kriterleri durumu: 1-18 fiili doğrulama dahil tamamlandı; gerçek konsol
 * Üretim görevi takvimi: haftalık Pazartesi 09:00, `NextRunTime=28.09.2026 09:00`, `LastTaskResult=0`, ayarlar/eylem birebir dondurulmuş dize; test göreviyle gerçek takvim tetiklemesi ateşlendi (20:35:00, sonuç 0) ve temizlendi.
 * Paketler son kod haliyle yeniden koşuldu: 418/418 kontrol (204 birim/akış + 153 fonksiyon kapsamı + 47 uçtan uca + 14 tetikleme/sahiplik).
 * Gerçek proje kapısı (2026-09-22, son kod): `compileall` exit 0; `--cek --ders dosya-organizasyonu --sessiz` exit 0 (`atlanan=2`, üst depo iki dosya); `--surum` çıktısı `DersMerkezi 0.1.4`; `--ayarlar --json` exit 0; `--durum` → `dosya-organizasyonu: gorev=kayitli (Ready)`; `--saglik --ders dosya-organizasyonu --json` exit 0 (tek API çağrısı, kota metni).
+
+
+### Public Sürüm ve CI (0.1.5)
+
+* Apache-2.0 lisansı ve `NOTICE` eklendi; depo 2026-09-22'de public yapıldı (secret scanning, push protection, Dependabot güncellemeleri ve özel güvenlik bildirimi etkin).
+* `.github/workflows/kalite-kapisi.yml` smoke iş akışı eklendi; iki koşu `success`; sürüm etiketi `v0.1.5` ve GitHub Release yayımlandı.
