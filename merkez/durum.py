@@ -49,9 +49,11 @@ def _uret(veri, ayrintili=False, ders=None):
         if ders and kimlik != ders:
             continue
         oto = kayit.get("otomasyon", {}) or {}
+        kaynak = ayarlar.kaynak_coz(kayit)
         kayit_verisi = {
             "kimlik": kimlik,
             "ad": str(kayit.get("ad", "")),
+            "kaynak": kaynak,
             "depo": str(kayit.get("depo", "")),
             "secili": bool(kayit.get("secili", True)),
             "otomasyon": {
@@ -61,6 +63,10 @@ def _uret(veri, ayrintili=False, ders=None):
                 "gorev": _gorev_bilgisi(kimlik, ayrintili),
             },
         }
+        if kaynak == "teams":
+            ozet = ayarlar.teams_ozeti(kayit.get("teams"))
+            if ozet:
+                kayit_verisi["teams"] = {"ozet": ozet}
         if ayrintili:
             kayit_verisi["durum_dosyasi"] = _durum_ozeti(kimlik)
         sonuc.append(kayit_verisi)

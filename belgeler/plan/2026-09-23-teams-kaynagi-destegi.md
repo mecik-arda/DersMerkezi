@@ -90,13 +90,14 @@ DersMerkezi bugün yalnız GitHub depolarından içerik çeker. Bu plan, ders ka
 * Sayfalama: `nextLink` köken/yol/HTTPS denetiminden geçmeli; eksik/döngüsel/uyumsuz bağlantı fail-closed; liste tamamlanmadan indirme başlamaz.
 * İşletim: test göreviyle gerçek Teams kimlik doğrulaması (token alma) kurulumu doğrulanır; üretim görevi değişmez.
 * Şema giriş kuralları: `zayif_dogrulama` yalnız `kaynak: teams` kayıtlarında kabul edilir; GitHub kaydında veya CLI'de `--kaynak` olmadan verilirse exit 2.
+* Dilim sınırı güvenliği: T0'da Teams kaydıyla `--cek`/`--otomatik` (kuru dâhil) çağrısı geçici korumayla net Türkçe hatayla reddedilir (exit 1, çökme yok, günlük/JSON kanalında hata); koruma T2'de kaldırılır ve T2 testi guard'ın yokluğunu doğrular.
 * Doğrulama yöntemi: geçici kopyada birim/akış paketleri + `trace` fonksiyon kapsamı + gerçek proje kapısı (`--cek --sessiz`, `--durum`, `--surum`); kanıtlar plan eki ve CHANGELOG'a işlenir.
 
 ## İş Kırılımı ve Kilometre Taşları
 
-* T0 (ayar dilimi): `kaynak`/`teams` doğrulaması, `gorunum`, matris ve özel kontroller, doküman iskeleti; testler.
-* T1 (Graph istemcisi): token alma, listeleme, indirme (302 takibi), QuickXorHash/SHA1 yerel hesaplama, 200 MB akış kontrolü.
-* T2 (indirici adaptörü + rapor/durum): kaynak dalları, rapor alanları, `atlanan` idempotansı.
+* T0 (ayar dilimi): `kaynak`/`teams` doğrulaması, `gorunum`, matris ve özel kontroller, doküman iskeleti; testler. Not: `indirici.indir_ders` içine geçici bir Teams koruması eklenir ("Teams kaynağı bu sürümde indirme akışına bağlı değil" hatası, exit 1, fail-closed); bu koruma **T2'de kaldırılır** ve T2 kontrol listesinde izlenir. T0 test paketindeki guard kontrolü, T2'de guard'ın kaldırıldığını doğrulayacak biçimde güncellenir.
+* T1 (Graph istemcisi): token alma, listeleme, indirme (302 takibi), QuickXorHash/SHA1 yerel hesaplama, 200 MB akış kontrolü. Başlangıç notu: teams kimlik deseni gerçek bir Graph ID örneğiyle teyit edilir (tenant/drive/item); geçerli bir kimlik desen nedeniyle reddedilirse desen genişletilir ve T0 testi güncellenir.
+* T2 (indirici adaptörü + rapor/durum): kaynak dalları, rapor alanları, `atlanan` idempotansı; **T0 geçici Teams guard'ının kaldırılıp gerçek adaptöre bağlanması** (T0 testindeki guard kontrolü bu adımda güncellenir).
 * T3 (sağlık + TUI + JSON): kaynak dallı sağlık, tablo/ekleme ekranı, JSON şemaları.
 * T4 (kapanış): test paketleri, gerçek kapı, dokümanlar, sürüm 0.2.0, Sol denetimi.
 
@@ -175,3 +176,14 @@ Sol Tur 4-10 (gpt-6-sol, salt-okunur) özeti: dokuz turda toplam 2 kritik + 7 or
 * GitHub JSON çıktısında mevcut alanlar birebir korunur; yalnız `kaynak` alanı eklenir.
 
 Tur 10 sonucu: kalan çelişki yok; plan uygulamaya hazır. Kullanıcı adımı: Microsoft Entra uygulama kaydı, `Files.Read.All` uygulama izni + yönetici onayı ve `TEAMS_TENANT_ID`/`TEAMS_CLIENT_ID`/`TEAMS_CLIENT_SECRET` ortam değişkenlerinin tanımlanması.
+
+## T0 Uygulama ve Doğrulama Kanıtları (2026-09-23)
+
+* Kapsam T0 ile sınırlı tutuldu: `ayarlar.json` sürüm 1; GitHub varsayılanı ve eski kayıtlara uyum; Teams kimlik/şema doğrulaması; CLI bayrak matrisi; redakte ayarlar/durum/liste görünümleri; T0 geçici indirme koruması; doküman iskeleti. Graph istemcisi ve T1+ akışları bu dilimde uygulanmadı.
+* Teams `driveId`/`itemId` için 8-200, `tenantId` için 2-128 karakter sınırı ve güvenli karakter kümeleri uygulanır; hata mesajları tam kimlikleri içermez. Redakte özet en fazla ilk 6 karakteri gösterir ve doğrulanmış kimliğin son karakterini hiçbir durumda göstermez.
+* T0 geçici `indirici.indir_ders` koruması seçili kontrolünden önce çalışır; `--cek`, `--otomatik`, kuru ve seçili olmayan Teams derslerinde hata + exit 1 sağlar. Koruma T2'de kaldırılıp gerçek adaptöre bağlanacak; T2 testi guard'ın kaldırıldığını doğrulayacak. T1 başlangıcında gerçek Graph ID örneğiyle desen uygunluğu teyit edilecek.
+* Sağlık uyumu T0'da yalnız çökme önleme düzeyindedir: Teams için Graph/depo çağrısı yapılmadan T3 uyarısı verilir; gerçek Graph sağlık yoklaması T3 kapsamındadır.
+* Geçici kopyada T0 paketi 198/198 geçti. Regresyon paketleri: birim/akış 206/206 (önceki 204 kontrole kaynak alanı için iki ek uyum kontrolü eklendi), kapsam 153/153, uçtan uca 47/47, tetikleme/sahiplik 14/14; toplam 420/420. `trace_runner.py` exit 0; Python `trace --count --summary` özeti `dersmerkezi.py` ve raporlanan `merkez` modüllerini %100 gösterdi. Test dosyaları depoya eklenmedi.
+* Gerçek proje kapısı: `python -m compileall merkez dersmerkezi.py` exit 0; `--cek --ders dosya-organizasyonu --sessiz` exit 0, günlükte `yeni=0 guncellenen=0 atlanan=2 baglam=2`; `--durum` exit 0 ve görev `Ready`; `--surum` `DersMerkezi 0.1.5`; `--ayarlar --json` exit 0, mevcut GitHub alanları korunup `kaynak:"github"` eklendi. Üretim görevinin eylem koduna dokunulmadı; E2E üretim görevi kontrolü geçti.
+* GitHub anonim API kotasının dolduğu bir ara denemede ağ testleri geçici olarak başarısız oldu; kota yenilendikten sonra gerçek çekme kapısı ve E2E paketi başarıyla yeniden koştu. Son sonuçlar yukarıdaki sayılardır.
+* Sol salt-okunur kod denetimi: ilk turda Teams guard sırası ve insan-okur redaksiyon bulguları, ikinci turda T0 sağlık çökme riski, üçüncü turda `null` alan doğrulaması ve `--ekle` yardım metni bulguları düzeltildi. Son tur `SONUC: ONAY` verdi; rapor `belgeler/gecmis/sol-denetim-2026-09-23-0.2.0-t0.md`.

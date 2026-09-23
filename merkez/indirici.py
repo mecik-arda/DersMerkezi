@@ -295,6 +295,10 @@ def indir_ders(anahtar, ilerleme=None, secili_zorunlu=True, kuru=False, zorla=Fa
     ders = veri["dersler"].get(anahtar)
     if not ders:
         raise IndirmeHatasi("Ders bulunamadı: {}".format(anahtar))
+    if ayarlar.kaynak_coz(ders) == "teams":
+        raise IndirmeHatasi(
+            "Teams kaynağı bu sürümde indirme akışına bağlı değil; kayıt ve ayar desteği hazır, "
+            "indirme desteği sonraki dilimde (T2) etkinleşecek. Bu ders şimdilik çekilemez.")
     rapor = _rapor()
     if secili_zorunlu and not ders.get("secili", True):
         rapor["atlanan"] += 1

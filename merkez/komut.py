@@ -49,6 +49,11 @@ BAYRAK_ADLARI = {
     "tetikle": "--tetikle",
     "log": "--log",
     "secili": "--secili",
+    "kaynak": "--kaynak",
+    "teams_drive": "--teams-drive",
+    "teams_item": "--teams-item",
+    "teams_tenant": "--teams-tenant",
+    "zayif_dogrulama": "--zayif-dogrulama",
 }
 
 IZINLI = {
@@ -75,6 +80,11 @@ IZINLI = {
     "tetikle": {"otomasyon_kur"},
     "log": (set(TUM_MODLAR) | {"otomatik"}) - {"surum"},
     "secili": {"ayarlar"},
+    "kaynak": {"ekle"},
+    "teams_drive": {"ekle"},
+    "teams_item": {"ekle"},
+    "teams_tenant": {"ekle"},
+    "zayif_dogrulama": {"ekle"},
 }
 
 
@@ -108,7 +118,7 @@ class TurkceParser(argparse.ArgumentParser):
 def arguman_ayristirici():
     ayristirici = TurkceParser(prog="dersmerkezi", description="DersMerkezi - cok dersli icerik cekme araci")
     ayristirici.add_argument("--listele", action="store_true", help="Kayitli dersleri listeler")
-    ayristirici.add_argument("--ekle", action="store_true", help="Yeni ders ekler (--ad ve --depo gerekli)")
+    ayristirici.add_argument("--ekle", action="store_true", help="Yeni ders ekler (--ad ve kaynak turune uygun bilgiler gerekli)")
     ayristirici.add_argument("--sil", action="store_true", help="Ders kaydini siler (--ders ve --onayla gerekli)")
     ayristirici.add_argument("--cek", action="store_true", help="Isaretli derslerin iceriklerini ceker")
     ayristirici.add_argument("--durum", action="store_true", help="Ders ve gorev durumunu gosterir")
@@ -136,6 +146,12 @@ def arguman_ayristirici():
     ayristirici.add_argument("--log", metavar="YOL", help="Alternatif gunluk dosyasi (proje koku icinde)")
     ayristirici.add_argument("--ad", help="Ders adi")
     ayristirici.add_argument("--depo", help="Depo (owner/repo)")
+    ayristirici.add_argument("--kaynak", choices=["github", "teams"], help="Ders kaynagi (varsayilan github)")
+    ayristirici.add_argument("--teams-drive", dest="teams_drive", help="Teams drive kimligi (--kaynak teams ile zorunlu)")
+    ayristirici.add_argument("--teams-item", dest="teams_item", help="Teams klasor item kimligi (--kaynak teams ile zorunlu)")
+    ayristirici.add_argument("--teams-tenant", dest="teams_tenant", help="Teams tenant kimligi (opsiyonel)")
+    ayristirici.add_argument("--zayif-dogrulama", dest="zayif_dogrulama", action="store_true",
+                             help="Teams icin zayif dogrulama (riskli; yalniz --ekle --kaynak teams ile)")
     ayristirici.add_argument("--dal", default=None, help="Dal adi (varsayilan main)")
     ayristirici.add_argument("--desen", default=None, help="Dosya deseni (varsayilan Hafta*.pdf)")
     ayristirici.add_argument("--slug", help="Ders kimligi (otomatik uretilir)")
@@ -185,8 +201,22 @@ def _bayrak_mod_kontrol(secenekler, mod):
 
 def _ozel_kontroller(secenekler, mod):
     if mod == "ekle":
-        if not secenekler.ad or not secenekler.depo:
-            raise KullanimHatasi("--ekle için --ad ve --depo zorunludur")
+        if not secenekler.ad:
+            raise KullanimHatasi("--ekle için --ad zorunludur")
+        kaynak = secenekler.kaynak or "github"
+        if kaynak == "teams":
+            if _verildi(secenekler, "depo"):
+                raise KullanimHatasi("--kaynak teams ile --depo birlikte kullanılamaz")
+            if not secenekler.teams_drive or not secenekler.teams_item:
+                raise KullanimHatasi("--kaynak teams için --teams-drive ve --teams-item zorunludur")
+        else:
+            if not secenekler.depo:
+                raise KullanimHatasi("--ekle için --depo zorunludur")
+            if _verildi(secenekler, "teams_drive") or _verildi(secenekler, "teams_item") \
+                    or _verildi(secenekler, "teams_tenant"):
+                raise KullanimHatasi("Teams parametreleri yalnız --kaynak teams ile kullanılabilir")
+        if secenekler.zayif_dogrulama and kaynak != "teams":
+            raise KullanimHatasi("--zayif-dogrulama yalnız --ekle --kaynak teams ile kullanılabilir")
     if mod == "sil":
         if not secenekler.ders:
             raise KullanimHatasi("--sil için --ders zorunludur")

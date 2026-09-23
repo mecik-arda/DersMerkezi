@@ -119,8 +119,13 @@ def denetle(ders=None, ag=False, ayrintili=False):
             ekle("uyari", "ağ", "{} dersin yalnızca ilk {} tanesi kontrol edildi".format(len(tumu), AG_DERS_SINIRI))
     elif ders and not ayar_hatasi and ders in veri["dersler"]:
         ag_dersler = [ders]
+    github_ag_dersler = []
     for kimlik in ag_dersler:
         kayit = veri["dersler"][kimlik]
+        if ayarlar.kaynak_coz(kayit) == "teams":
+            ekle("uyari", "ağ:" + kimlik, "Teams ağ sağlık denetimi T3 diliminde etkinleşecek")
+            continue
+        github_ag_dersler.append(kimlik)
         try:
             _liste, kota_bilgi = indirici.depo_listele(
                 kayit["depo"], kayit.get("dal", "main"), indirici.token_al(), meta=True)
@@ -129,7 +134,7 @@ def denetle(ders=None, ag=False, ayrintili=False):
             ekle("ok", "depo:" + kimlik, "{} erişilebilir".format(kayit["depo"]))
         except indirici.IndirmeHatasi as hata:
             ekle("sorun", "depo:" + kimlik, str(hata))
-    if ag_dersler:
+    if github_ag_dersler:
         ekle("ok", "kimlik", "GITHUB_TOKEN tanımlı" if indirici.token_al() else "GITHUB_TOKEN tanımlı değil")
 
     genel = "sorun var" if sorunlar else "sorun yok"

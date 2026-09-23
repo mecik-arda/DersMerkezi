@@ -21,6 +21,10 @@ SAAT_DESENI = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 YASAK_DOSYA = re.compile(r"[<>:\"/\\|?*\x00-\x1f]")
 AD_YASAK = re.compile(r"[^\w .,()!+-]")
 AYGIT_ADLARI = {"CON", "PRN", "AUX", "NUL"} | {"COM%d" % i for i in range(1, 10)} | {"LPT%d" % i for i in range(1, 10)}
+KAYNAKLAR = ("github", "teams")
+TEAMS_ID_DESENI = re.compile(r"^[A-Za-z0-9._!-]{8,200}$")
+TEAMS_TENANT_DESENI = re.compile(r"^[A-Za-z0-9.-]{2,128}$")
+TEAMS_OZET_UZUNLUK = 6
 
 TR_HARF = str.maketrans({
     "ç": "c", "Ç": "c", "ğ": "g", "Ğ": "g", "ı": "i", "İ": "i",
@@ -69,6 +73,61 @@ def depo_coz(depo):
     if not DEPO_DESENI.match(metin):
         raise ValueError("Depo 'owner/repo' biçiminde olmalı")
     return metin
+
+
+def kaynak_coz(kayit):
+    if not isinstance(kayit, dict):
+        raise ValueError("kaynak github veya teams olmalı")
+    if "kaynak" not in kayit:
+        return "github"
+    kaynak = kayit["kaynak"]
+    if not isinstance(kaynak, str) or kaynak not in KAYNAKLAR:
+        raise ValueError("kaynak github veya teams olmalı")
+    return kaynak
+
+
+def _kisalt(deger):
+    deger = str(deger or "")
+    if not deger:
+        return ""
+    kes = min(TEAMS_OZET_UZUNLUK, max(0, len(deger) - 1))
+    return deger[:kes] + "…"
+
+
+def teams_ozeti(teams):
+    if not isinstance(teams, dict):
+        return None
+    drive = str(teams.get("driveId", "") or "").strip()
+    item = str(teams.get("itemId", "") or "").strip()
+    if not drive or not item:
+        return None
+    return "teams:{}/{}".format(_kisalt(drive), _kisalt(item))
+
+
+def teams_dogrula(kayit, kaynak):
+    teams = kayit.get("teams")
+    if kaynak == "github":
+        if "teams" in kayit:
+            return "github kaydında teams alanı kullanılamaz"
+        if "zayif_dogrulama" in kayit:
+            return "zayif_dogrulama yalnız teams kaydında kullanılabilir"
+        return None
+    if not isinstance(teams, dict):
+        return "teams bölümü eksik veya nesne değil"
+    for alan in ("driveId", "itemId"):
+        deger = teams.get(alan)
+        if deger is None or (isinstance(deger, str) and not deger.strip()):
+            return "teams.{} zorunlu".format(alan)
+        if not isinstance(deger, str) or not TEAMS_ID_DESENI.match(deger):
+            return "teams.{} geçersiz".format(alan)
+    tenant = teams.get("tenantId")
+    if "tenantId" in teams:
+        if not isinstance(tenant, str) or not TEAMS_TENANT_DESENI.match(tenant):
+            return "teams.tenantId geçersiz"
+    zayif = kayit.get("zayif_dogrulama")
+    if "zayif_dogrulama" in kayit and not isinstance(zayif, bool):
+        return "zayif_dogrulama mantıksal değer olmalı"
+    return None
 
 
 def ad_gecerli(ad):
@@ -174,6 +233,10 @@ def veri_dogrula(veri):
         return False, "şema sürümü desteklenmiyor: {}".format(veri.get("surum"))
     if not isinstance(veri.get("dersler"), dict):
         return False, "dersler bölümü yok"
+    for kimlik, kayit in veri["dersler"].items():
+        hata = ders_dogrula(str(kimlik), kayit)
+        if hata:
+            return False, "geçersiz ders kaydı ({}): {}".format(kimlik, hata)
     return True, ""
 
 
@@ -186,9 +249,19 @@ def ders_dogrula(kimlik, kayit):
     if not gecerli:
         return "geçersiz ad: {}".format(neden)
     try:
-        depo_coz(str(kayit.get("depo", "")))
-    except ValueError as hata:
-        return "geçersiz depo: {}".format(hata)
+        kaynak = kaynak_coz(kayit)
+    except ValueError:
+        return "geçersiz kaynak (github veya teams olmalı)"
+    if kaynak == "github":
+        try:
+            depo_coz(str(kayit.get("depo", "")))
+        except ValueError as hata:
+            return "geçersiz depo: {}".format(hata)
+    elif "depo" in kayit:
+        return "teams kaydında depo alanı kullanılamaz"
+    teams_hatasi = teams_dogrula(kayit, kaynak)
+    if teams_hatasi:
+        return teams_hatasi
     dal = str(kayit.get("dal", ""))
     if not DAL_DESENI.match(dal) or ".." in dal:
         return "geçersiz dal: {}".format(dal)
@@ -263,12 +336,17 @@ def kaydet(veri):
     _json_yaz(AYAR_YOLU, veri)
 
 
-def ders_ekle(ad, depo, dal="main", desen="Hafta*.pdf", slug=None):
+def ders_ekle(ad, depo=None, dal="main", desen="Hafta*.pdf", slug=None,
+              kaynak="github", teams=None, zayif_dogrulama=False):
     ad = (ad or "").strip()
     gecerli, neden = ad_gecerli(ad)
     if not gecerli:
         raise ValueError("Geçersiz ders adı: {}".format(neden))
-    depo = depo_coz(depo)
+    kaynak = "github" if kaynak is None else kaynak
+    if not isinstance(kaynak, str) or kaynak not in KAYNAKLAR:
+        raise ValueError("Geçersiz kaynak (github veya teams olmalı)")
+    if not isinstance(zayif_dogrulama, bool):
+        raise ValueError("zayif_dogrulama mantıksal değer olmalı")
     dal = (dal or "main").strip()
     if not DAL_DESENI.match(dal) or ".." in dal:
         raise ValueError("Geçersiz dal adı")
@@ -278,19 +356,42 @@ def ders_ekle(ad, depo, dal="main", desen="Hafta*.pdf", slug=None):
     kimlik = (slug or slug_uret(ad)).strip().lower()
     if len(kimlik) < 2 or len(kimlik) > 40 or not SLUG_DESENI.match(kimlik):
         raise ValueError("Geçersiz ders kimliği (slug)")
+    kayit = {
+        "ad": ad,
+        "kaynak": kaynak,
+        "dal": dal,
+        "desen": desen,
+        "secili": True,
+        "otomasyon": {"aktif": False, "gunler": [], "saat": "09:00", "gorevAdi": "DersMerkezi_" + kimlik},
+    }
+    if kaynak == "github":
+        if teams is not None:
+            raise ValueError("GitHub kaydında teams alanları kullanılamaz")
+        if zayif_dogrulama:
+            raise ValueError("zayif_dogrulama yalnız teams kaydında kullanılabilir")
+        kayit["depo"] = depo_coz(depo)
+    else:
+        if depo is not None:
+            raise ValueError("Teams kaydında depo alanı kullanılamaz")
+        veri_teams = teams if isinstance(teams, dict) else {}
+        kayit["teams"] = {alan: veri_teams.get(alan) for alan in ("driveId", "itemId")}
+        for alan in ("driveId", "itemId"):
+            if isinstance(kayit["teams"][alan], str):
+                kayit["teams"][alan] = kayit["teams"][alan].strip()
+        if "tenantId" in veri_teams:
+            tenant = veri_teams["tenantId"]
+            kayit["teams"]["tenantId"] = tenant.strip() if isinstance(tenant, str) else tenant
+        if zayif_dogrulama:
+            kayit["zayif_dogrulama"] = True
+    hata = ders_dogrula(kimlik, kayit)
+    if hata:
+        raise ValueError("Geçersiz ders kaydı: {}".format(hata))
     with gunluk.kilitle():
         veri = yukle()
         for mevcut in veri["dersler"]:
             if mevcut.casefold() == kimlik.casefold():
                 raise ValueError("Bu ders zaten kayıtlı: {}".format(mevcut))
-        veri["dersler"][kimlik] = {
-            "ad": ad,
-            "depo": depo,
-            "dal": dal,
-            "desen": desen,
-            "secili": True,
-            "otomasyon": {"aktif": False, "gunler": [], "saat": "09:00", "gorevAdi": "DersMerkezi_" + kimlik},
-        }
+        veri["dersler"][kimlik] = kayit
         kaydet(veri)
     return kimlik
 
@@ -323,9 +424,11 @@ def gorunum(ders=None):
         if ders and kimlik != ders:
             continue
         oto = kayit.get("otomasyon", {}) or {}
-        kayitlar.append({
+        kaynak = kaynak_coz(kayit)
+        gorunum_kaydi = {
             "kimlik": kimlik,
             "ad": str(kayit.get("ad", "")),
+            "kaynak": kaynak,
             "depo": str(kayit.get("depo", "")),
             "dal": str(kayit.get("dal", "main")),
             "desen": str(kayit.get("desen", "Hafta*.pdf")),
@@ -335,7 +438,12 @@ def gorunum(ders=None):
                 "gunler": list(oto.get("gunler") or []),
                 "saat": str(oto.get("saat", "09:00")),
             },
-        })
+        }
+        if kaynak == "teams":
+            ozet = teams_ozeti(kayit.get("teams"))
+            if ozet:
+                gorunum_kaydi["teams"] = {"ozet": ozet}
+        kayitlar.append(gorunum_kaydi)
     return kayitlar
 
 

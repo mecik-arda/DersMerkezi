@@ -10,8 +10,8 @@ DersMerkezi, Windows masaüstünde çalışan Python + Rich tabanlı çok dersli
 
 * `dersmerkezi.py`: Giriş noktası; mod işleyicileri, çıkış kodları (0 başarı, 1 hata, 2 kullanım hatası) ve TUI başlatma.
 * `merkez/komut.py`: Argüman ayrıştırıcı (`arguman_ayristirici`), mod/bayrak matrisi (`dogrula`), JSON çıktı sözleşmesi (`kok_json`, `json_yaz`, `hata_json_yaz`) ve Türkçe ayrıştırma hata eşlemesi.
-* `merkez/ayarlar.py`: `ayarlar.json` şeması (sürüm 1), doğrulama (slug, ad, depo/URL, dal, desen, saat, gün, dosya adı; `veri_dogrula`/`ders_dogrula`), `yukle_salt`/`gorunum` salt-okunur görünüm, `secili_ayarla` fail-closed seçim mutasyonu, atomik yazım ve tek nesil yedek.
-* `merkez/indirici.py`: GitHub Contents API listeleme (isteğe bağlı kota meta verisi), akışlı indirme (`.part`), Git blob SHA-1 doğrulama, Markdown üretimi, kuru/`zorla`/`zorla-md` modları, durum şeması sürüm 2.
+* `merkez/ayarlar.py`: `ayarlar.json` şeması (sürüm 1), doğrulama (slug, ad, depo/URL, dal, desen, saat, gün, dosya adı; kaynak/teams/kimlik alanları; `veri_dogrula`/`ders_dogrula`), `yukle_salt`/`gorunum` salt-okunur görünüm, Teams kimlik redaksiyonu (`teams_ozeti`), `secili_ayarla` fail-closed seçim mutasyonu, atomik yazım ve tek nesil yedek.
+* `merkez/indirici.py`: GitHub Contents API listeleme (isteğe bağlı kota meta verisi), akışlı indirme (`.part`), Git blob SHA-1 doğrulama, Markdown üretimi, kuru/`zorla`/`zorla-md` modları, durum şeması sürüm 2; Teams kaydı için geçici T0 koruması (T2'de gerçek adaptörle değiştirilir).
 * `merkez/durum.py`: Ders ve görev durum kayıtları; isteğe bağlı ayrıntı (son çalışma, son sonuç, eylem, durum dosyası özeti); CLI ve TUI ortak.
 * `merkez/saglik.py`: Salt-okunur sağlık denetimi (ortam, ayar şeması, ders kayıtları, kilit, günlük/durum erişimi); `--ders`/`--ag`/`--ayrintili` ile sınırlı ağ ve görev sorgusu.
 * `merkez/tamamlama.py`: Parser'dan türetilen bayrak listesiyle PowerShell tamamlama betiği üretimi (atomik yazım).
@@ -57,15 +57,28 @@ Zamanlanmış koşularda `pythonw.exe` ile `--otomatik --ders <kimlik> --sessiz`
   "dersler": {
     "<kimlik>": {
       "ad": "...",
+      "kaynak": "github",
       "depo": "owner/repo",
       "dal": "main",
       "desen": "Hafta*.pdf",
       "secili": true,
       "otomasyon": {"aktif": false, "gunler": [], "saat": "09:00", "gorevAdi": "DersMerkezi_<kimlik>"}
+    },
+    "<teams-kimlik>": {
+      "ad": "...",
+      "kaynak": "teams",
+      "teams": {"tenantId": "<guid>", "driveId": "b!...", "itemId": "01ABC..."},
+      "dal": "main",
+      "desen": "Hafta*.pdf",
+      "secili": true,
+      "zayif_dogrulama": false,
+      "otomasyon": {"aktif": false, "gunler": [], "saat": "09:00", "gorevAdi": "DersMerkezi_<teams-kimlik>"}
     }
   }
 }
 ```
+
+`kaynak` yoksa `github` kabul edilir; mevcut kayıtlar değişmeden çalışır (şema sürümü artırılmaz). GitHub kaydında `teams` ve `zayif_dogrulama` yasaktır; Teams kaydında `driveId`/`itemId` zorunlu, `tenantId` opsiyonel, `depo` yasaktır. Kimlik alanları güvenli karakter kümesi ve uzunluk sınırıyla doğrulanır; değerler hata mesajına tam yazılmaz. Tam kimlikler yalnız `ayarlar.json`'da bulunur; görünüm ve JSON çıktısında `teams:{ilk6}…/{ilk6}…` biçiminde redakte edilir.
 
 ### indirilenler.json (sürüm 2)
 
@@ -87,6 +100,16 @@ Zamanlanmış koşularda `pythonw.exe` ile `--otomatik --ders <kimlik> --sessiz`
   }
 }
 ```
+
+## Kaynak Soyutlaması (0.2.0 T0 taslağı)
+
+* Kaynak türleri: `github` (mevcut tam akış) ve `teams` (Microsoft Teams kanal dosyaları / SharePoint belge kitaplığı, Microsoft Graph üzerinden). Kaynak ayrımı ders kaydındaki isteğe bağlı `kaynak` alanıyla yapılır; alan yoksa `github` kabul edilir (additive, şema sürümü artmaz).
+* T0 (bu dilim): kaynak/teams şema doğrulaması, CLI matrisi, redakte görünüm ve doküman iskeleti hazırdır. Teams kaydıyla indirme çağrısı `indirici.indir_ders` içindeki geçici korumayla fail-closed reddedilir (Türkçe hata + exit 1); bu koruma T2'de gerçek adaptörle değiştirilecek ve T2 kontrol listesinde izlenir.
+* T0 sağlık uyumu: `--saglik --ders <teams>` ve `--saglik --ag` Teams girdisini çökmeksizin ağ çağrısı yapmadan uyarı olarak raporlar; gerçek Graph sağlık yoklaması T3'tedir.
+* T1: Graph istemcisi (client credentials token, listeleme sayfalama denetimi, 302 takipli indirme, QuickXorHash/SHA1 yerel doğrulama).
+* T2: `indirici` içinde kaynak dallanması (`kaynak == "teams"`), ortak akış korunur: 200 MB/liste kapıları, dosya adı doğrulaması, atomik yazım, Markdown üretimi, durum kaydı ve idempotans.
+* Sır sınırı: `TEAMS_CLIENT_SECRET` yalnız ortam değişkeninde; `TEAMS_CLIENT_ID` ve `TEAMS_TENANT_ID` ortam değişkeniyle verilebilir. Tenant önceliği: ders kaydı > komut satırı > ortam değişkeni. Token yalnız bellekte tutulur; ön kimlikli indirme URL'si günlük/durum/Markdown'a yazılmaz.
+* Kimlik redaksiyonu: tam Teams kimlikleri yalnız `ayarlar.json`'da; `--ayarlar`/`--durum` JSON ve insan çıktısında `teams:<ilk6>…/<ilk6>…` özeti gösterilir. Doğrulama hatalarında kimlik değerleri tam yazılmaz.
 
 ## Güvenlik ve Değişmezler
 

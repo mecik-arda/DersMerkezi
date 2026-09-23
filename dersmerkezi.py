@@ -76,7 +76,11 @@ def _durum_insan(kayitlar, ayrintili):
             gorev_metni = "sorgulanamadi"
         else:
             gorev_metni = "kayitli ({})".format(gorev["durum"])
-        print("{}: gorev={}".format(kayit["kimlik"], gorev_metni))
+        if kayit.get("kaynak") == "teams":
+            ozet = (kayit.get("teams") or {}).get("ozet") or "teams"
+            print("{}: kaynak=teams {} gorev={}".format(kayit["kimlik"], ozet, gorev_metni))
+        else:
+            print("{}: gorev={}".format(kayit["kimlik"], gorev_metni))
         if not ayrintili:
             continue
         if gorev.get("sonCalisma"):
@@ -120,8 +124,12 @@ def _calistir(secenekler, mod, ayristirici):
                 oto_metin = "{} {}".format(",".join(oto.get("gunler", [])), oto.get("saat", ""))
             else:
                 oto_metin = "kapali"
+            if ayarlar.kaynak_coz(ders) == "teams":
+                depo_metin = ayarlar.teams_ozeti(ders.get("teams")) or "teams"
+            else:
+                depo_metin = ders.get("depo", "")
             print("{}\t{}\t{}\tsecili={}\totomasyon={}".format(
-                kimlik, ders.get("ad", ""), ders.get("depo", ""), ders.get("secili", True), oto_metin))
+                kimlik, ders.get("ad", ""), depo_metin, ders.get("secili", True), oto_metin))
         return 0
 
     if mod == "ayarlar":
@@ -149,8 +157,12 @@ def _calistir(secenekler, mod, ayristirici):
                     oto_metin = "{} {}".format(",".join(oto["gunler"]), oto["saat"])
                 else:
                     oto_metin = "kapali"
+                if kayit.get("kaynak") == "teams":
+                    depo_metin = (kayit.get("teams") or {}).get("ozet") or "teams"
+                else:
+                    depo_metin = kayit["depo"]
                 print("{}\t{}\t{}\tdal={}\tdesen={}\tsecili={}\totomasyon={}".format(
-                    kayit["kimlik"], kayit["ad"], kayit["depo"], kayit["dal"], kayit["desen"],
+                    kayit["kimlik"], kayit["ad"], depo_metin, kayit["dal"], kayit["desen"],
                     kayit["secili"], oto_metin))
         return 0
 
@@ -163,9 +175,21 @@ def _calistir(secenekler, mod, ayristirici):
         return 0
 
     if mod == "ekle":
+        kaynak = secenekler.kaynak or "github"
+        teams = None
+        if kaynak == "teams":
+            teams = {"driveId": secenekler.teams_drive, "itemId": secenekler.teams_item}
+            if secenekler.teams_tenant is not None:
+                teams["tenantId"] = secenekler.teams_tenant
         kimlik = ayarlar.ders_ekle(secenekler.ad, secenekler.depo, secenekler.dal or "main",
-                                   secenekler.desen or "Hafta*.pdf", secenekler.slug)
-        gunluk.kayit("BILGI", "Ders eklendi: {}".format(kimlik))
+                                   secenekler.desen or "Hafta*.pdf", secenekler.slug,
+                                   kaynak=kaynak, teams=teams,
+                                   zayif_dogrulama=bool(secenekler.zayif_dogrulama))
+        if secenekler.zayif_dogrulama:
+            gunluk.kayit("UYARI", "Zayif dogrulama etkinlestirildi; risk kullanici karariyla kabul edildi")
+            if not gunluk.SESSIZ:
+                sys.stderr.write("UYARI: Zayif dogrulama yalniz saglayici hash'i bulunamadiginda ve risk kabul edildiginde kullanilmalidir.\n")
+        gunluk.kayit("BILGI", "Ders eklendi: {} (kaynak={})".format(kimlik, kaynak))
         return 0
 
     if mod == "sil":

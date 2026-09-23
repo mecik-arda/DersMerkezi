@@ -119,10 +119,35 @@ python dersmerkezi.py --ayarlar --ders dosya-organizasyonu --secili hayir
 python dersmerkezi.py --ayarlar --json
 ```
 
-* `--ayarlar` ders ayarlarını (ad, depo, dal, desen, seçili durumu, otomasyon özeti) salt-okunur gösterir; ağ çağrısı, görev sorgusu ve dosya yazımı yapmaz; bozuk `ayarlar.json` karantinaya alınmaz (exit 1).
+* `--ayarlar` ders ayarlarını (ad, kaynak, depo, dal, desen, seçili durumu, otomasyon özeti) salt-okunur gösterir; ağ çağrısı, görev sorgusu ve dosya yazımı yapmaz; bozuk `ayarlar.json` karantinaya alınmaz (exit 1).
 * `--secili evet|hayir` yalnız `--ayarlar` ile ve `--ders` ile birlikte kullanılır; seçim değişikliği `Local\DersMerkezi` kilidi, atomik yazım ve tek nesil yedek zincirinden geçer. Bilinmeyen ders exit 2, kullanım hataları dosya izi bırakmaz.
-* `--json` çıktısı `{json_surum, komut, uygulama_surum, dersler[]}`; mutasyon sonrası yeni durum döner. `--sessiz` yalnız insan-okur satırları bastırır, JSON stdout'ta kalır.
+* `--json` çıktısı `{json_surum, komut, uygulama_surum, dersler[]}`; mutasyon sonrası yeni durum döner. Her ders kaydı `kaynak` alanı taşır (`github` veya `teams`); Teams kaydında tam kimlikler yerine redakte edilmiş `teams.ozet` gösterilir (`teams:b!2SIn…/01H7C…` biçimi). `--sessiz` yalnız insan-okur satırları bastırır, JSON stdout'ta kalır.
 * TUI'deki "Ayarlar" ekranı aynı ortak işlevi (`ayarlar.secili_ayarla`) kullanır.
+
+### Teams kaynağı (0.2.0 hazırlığı)
+
+Ders kaydı GitHub'a ek olarak Microsoft Teams/SharePoint kaynağını destekler. Bu dilimde (T0) kayıt, ayar ve görünüm hazırdır; Teams kaynağıyla içerik çekme sonraki dilimde (T2) etkinleşecektir. Teams dersiyle `--cek` çağrısı bu sürümde anlaşılır Türkçe hatayla exit 1 döner.
+
+```powershell
+python dersmerkezi.py --ekle --ad "Ornek Ders" --kaynak teams --teams-drive "b!..." --teams-item "01ABC..." [--teams-tenant "<tenant>"]
+python dersmerkezi.py --ekle --ad "Ornek Ders 2" --kaynak teams --teams-drive "b!..." --teams-item "01ABC..." --zayif-dogrulama
+```
+
+* `--kaynak` varsayılanı `github`'dir; mevcut kayıtlar değişmeden çalışır.
+* `--kaynak teams` için `--teams-drive` ve `--teams-item` zorunludur; `--depo` kullanılamaz. GitHub/varsayılan kaynakta `--depo` zorunludur; Teams parametreleri kullanılamaz. Geçersiz birleşimler exit 2 verir ve ayarlar dosyasına iz bırakmaz.
+* `--teams-tenant` opsiyoneldir; verilmezse ortam değişkeni (`TEAMS_TENANT_ID`) kullanılır. Öncelik: ders kaydı > komut satırı > ortam değişkeni.
+* `--zayif-dogrulama` yalnız `--ekle --kaynak teams` ile kullanılır; bu dilimde tercih ayara kaydedilir, doğrulama davranışı T2'de uygulanır. Varsayılan kapalıdır; açıldığında risk uyarısı üretir. T2'de sağlayıcı hash'i yoksa boyut + eTag + yerel SHA-256 temelli sınırlı kabul yolunu etkinleştirecektir.
+* Tam kimlikler (tenant/drive/item) yalnız `ayarlar.json` içinde tutulur; `--ayarlar`, `--durum` ve `--listele` JSON çıktılarında ve insan-okur görünümlerinde yalnız redakte edilmiş `teams.ozet` kısaltması görünür; günlükte tam kimlik yazılmaz.
+* Ortam değişkenleri (yalnız ortam değişkeni; dosyaya veya günlüğe yazılmaz):
+
+```powershell
+setx TEAMS_TENANT_ID "<tenant-kimligi>"
+setx TEAMS_CLIENT_ID "<uygulama-istemci-kimligi>"
+setx TEAMS_CLIENT_SECRET "<uygulama-istemci-sirri>"
+```
+
+* `TEAMS_CLIENT_SECRET` tek sırdır; yalnız ortam değişkeninde tutulur ve hata mesajlarında redakte edilir. `TEAMS_CLIENT_ID` yalnız ortam değişkeniyle verilir (ders kaydında tutulmaz).
+* Microsoft Entra uygulama kaydı ve yönetici onayı kullanıcı adımıdır; önerilen en az ayrıcalık izni `Files.Read.All`'dır. Kurumsal politika gerektirirse `Sites.Selected` + site bazlı yetkilendirme alternatiftir. Üretimde istemci sırrı yerine sertifika/federatif kimlik bilgisi önerilir.
 
 ### Ders silme
 
