@@ -1,7 +1,7 @@
 # DersMerkezi CLI Geliştirme Önerileri - Plan Belgesi
 
 Tarih: 2026-09-21
-Durum: Uygulandı (Öncelik 1-4; sürüm 0.1.2 ve 0.1.3; Sol denetimlerinden ONAY)
+Durum: Uygulandı (Öncelik 1-4; sürüm 0.1.2-0.1.5; Sol denetimlerinden ONAY; depo public)
 Kapsam: `dersmerkezi.py` komut satırı arayüzünün genişletilmesi
 İlgili belgeler: `belgeler/plan/2026-09-21-dersmerkezi-cli.md` (ana plan ve kanıtlar), `belgeler/mimari.md`, `AGENTS.md`
 
