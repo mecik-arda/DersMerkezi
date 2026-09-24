@@ -316,8 +316,8 @@ def _oge_donustur(oge):
     tur = "file" if isinstance(dosya, dict) else "dir" if isinstance(klasor, dict) else "other"
     sonuc = {"name": ad, "type": tur, "id": oge.get("id"), "eTag": oge.get("eTag"), "size": oge.get("size")}
     if tur == "file":
-        hashler = dosya.get("hashes")
-        sonuc["hashes"] = {} if hashler is None else hashler
+        if "hashes" in dosya:
+            sonuc["hashes"] = dosya["hashes"]
     return sonuc
 
 

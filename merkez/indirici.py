@@ -279,18 +279,18 @@ def _rapor():
 
 
 def _teams_hashleri_coz(oge):
-    hashler = oge.get("hashes")
-    if hashler is None:
-        hashler = {}
+    if "hashes" not in oge:
+        return {}
+    hashler = oge["hashes"]
     if not isinstance(hashler, dict):
         raise teams.TeamsHatasi("Teams sağlayıcı hash bilgisi geçersiz")
+    if not hashler:
+        raise teams.TeamsHatasi("Teams sağlayıcı hash nesnesi boş")
     sonuc = {}
     qx = hashler.get("quickXorHash")
-    if qx is not None:
-        if not isinstance(qx, str):
+    if "quickXorHash" in hashler:
+        if not isinstance(qx, str) or not qx:
             raise teams.TeamsHatasi("Teams quickXorHash biçimi geçersiz")
-        if not qx:
-            raise teams.TeamsHatasi("Teams quickXorHash boş")
         try:
             ham = base64.b64decode(qx, validate=True)
         except (ValueError, TypeError):
@@ -299,7 +299,7 @@ def _teams_hashleri_coz(oge):
             raise teams.TeamsHatasi("Teams quickXorHash uzunluğu geçersiz")
         sonuc["quickxor"] = base64.b64encode(ham).decode("ascii")
     sha1 = hashler.get("sha1Hash")
-    if sha1 is not None:
+    if "sha1Hash" in hashler:
         if not isinstance(sha1, str) or not re.fullmatch(r"[A-Fa-f0-9]{40}", sha1):
             raise teams.TeamsHatasi("Teams sha1Hash biçimi geçersiz")
         sonuc["sha1"] = sha1.lower()
@@ -336,6 +336,20 @@ def _teams_yerel_hashler(yol, algoritmalar):
     return sonuc
 
 
+def _teams_weak_local_durum(yol, boyut, oge, onceki):
+    if (not onceki or onceki.get("dogrulama") != "zayif" or not Path(yol).is_file()
+            or onceki.get("boyut") != boyut or onceki.get("teams_etag") != oge.get("eTag")):
+        return None
+    try:
+        if Path(yol).stat().st_size != boyut:
+            return False
+        sha = onceki.get("yerel_sha256")
+        return (isinstance(sha, str) and re.fullmatch(r"[A-Fa-f0-9]{64}", sha) is not None
+                and hmac.compare_digest(dosya_sha256(yol), sha))
+    except OSError:
+        return False
+
+
 def _teams_local_dogrula(yol, boyut, oge, onceki, hashler, zayif):
     if not onceki or not Path(yol).is_file():
         return False
@@ -346,16 +360,7 @@ def _teams_local_dogrula(yol, boyut, oge, onceki, hashler, zayif):
         return False
     yol_ad = _teams_dogrulama_yolu(hashler)
     if yol_ad == "zayif":
-        if not zayif or onceki.get("dogrulama") != "zayif":
-            return False
-        etag = oge.get("eTag")
-        if not isinstance(etag, str) or not etag or onceki.get("teams_etag") != etag:
-            return False
-        sha = onceki.get("yerel_sha256")
-        try:
-            return isinstance(sha, str) and len(sha) == 64 and dosya_sha256(yol) == sha
-        except OSError:
-            return False
+        return zayif and _teams_weak_local_durum(yol, boyut, oge, onceki) is True
     if onceki.get("dogrulama") != yol_ad or onceki.get("saglayici_hashler") != hashler:
         return False
     hesaplanan = _teams_yerel_hashler(yol, hashler)
@@ -449,17 +454,35 @@ def _teams_indir_ders(anahtar, ders, ilerleme, kuru, zorla, zorla_md, ust_boyut,
         yerel = hedef_klasor / ad
         md_yolu = yerel.with_suffix(".md")
         kayitli = durum["dosyalar"].get(ad)
+        if kayitli is not None and not isinstance(kayitli, dict):
+            rapor["dogrulama_hatasi"] += 1
+            rapor["hatalar"].append("{}: dosya durum kaydı geçersiz".format(ad))
+            continue
+        weak_local = _teams_weak_local_durum(yerel, boyut, oge, kayitli)
+        if weak_local is False:
+            temizlendi = True
+            if not kuru:
+                for yol in (yerel, md_yolu):
+                    try:
+                        yol.unlink(missing_ok=True)
+                    except OSError:
+                        temizlendi = False
+                durum["dosyalar"].pop(ad, None)
+                _durum_kaydet(durum_yolu, durum)
+            rapor["dogrulama_hatasi"] += 1
+            rapor["hatalar"].append("{}: zayıf doğrulama kayıtlı yerel dosyayla eşleşmiyor{}".format(
+                ad, " ve güvenilmez dosya temizlenemedi" if not temizlendi else ""))
+            continue
         indir_gerek = zorla or not _teams_local_dogrula(yerel, boyut, oge, kayitli, hashler, zayif_izinli)
         source_url = teams.kaynak_yolu(drive_id, item_id, ad)
-        if yol == "zayif":
-            rapor["zayif_dogrulama"] += 1
-            rapor["uyarilar"].append("{}: sağlayıcı hash'i olmadığından eTag ve yerel SHA-256 kullanıldı".format(ad))
         if indir_gerek and kuru:
             rapor["planlanan_bayt"] += boyut
             if kayitli is None:
                 rapor["yeni"] += 1
             else:
                 rapor["guncellenen"] += 1
+            if yol == "zayif":
+                rapor["uyarilar"].append("{}: kuru önizlemede zayıf doğrulama planlandı".format(ad))
             continue
         if indir_gerek:
             gecici = yerel.with_name(yerel.name + ".part")
@@ -499,9 +522,14 @@ def _teams_indir_ders(anahtar, ders, ilerleme, kuru, zorla, zorla_md, ust_boyut,
             rapor["atlanan"] += 1
             yerel_sha256 = str((kayitli or {}).get("yerel_sha256") or "")
         if kuru:
+            if yol == "zayif":
+                rapor["uyarilar"].append("{}: kuru önizlemede zayıf doğrulama planlandı".format(ad))
             if not indir_gerek and _md_gecerli(md_yolu, kayitli):
                 rapor["baglam"] += 1
             continue
+        if yol == "zayif":
+            rapor["zayif_dogrulama"] += 1
+            rapor["uyarilar"].append("{}: sağlayıcı hash'i olmadığından eTag ve yerel SHA-256 kullanıldı".format(ad))
         md_hazir = False
         md_sha = ""
         md_boyut = 0

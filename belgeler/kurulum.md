@@ -91,7 +91,7 @@ python dersmerkezi.py --surum --json
 * `--json` şu modlarla geçerlidir: `--durum`, `--listele`, `--cek`, `--saglik`, `--surum`, `--oto-tamamlama`, `--ayarlar`.
 * Başarılı koşuda stdout yalnızca tek JSON nesnesi içerir (`json_surum`, `komut`, `uygulama_surum`); insan-okur metinler stderr'e gider.
 * Çalışma hatasında (exit 1) stderr'e `{json_surum, komut, hata:{sinif, mesaj}}` ve insan satırı yazılır, stdout boş kalır. Kullanım hatası (exit 2) düz Türkçe metindir, JSON içermez.
-* `--cek --json` toplamlarında `zayif_dogrulama` sayacı ve ders başına `uyarilar[]` bulunur; zayıf doğrulama açıkça ayarlanmışsa uyarı sayacı artar ancak tek başına exit 1 üretmez.
+* `--cek --json` toplamlarında `zayif_dogrulama` sayacı ve ders başına `uyarilar[]` bulunur; canlı koşuda yalnız doğrulanmış weak dosyalar sayılır. Kuru önizleme weak doğrulama plan uyarısı verebilir fakat kabul sayacını artırmaz. Weak doğrulama tek başına exit 1 üretmez.
 * `--json` ile `--ayrintili` birlikte kullanılamaz.
 
 ### Zamanlanmış görev
@@ -140,9 +140,9 @@ python dersmerkezi.py --saglik --ders ornek-ders --json
 * `--kaynak teams` için `--teams-drive` ve `--teams-item` zorunludur; `--depo` kullanılamaz. GitHub/varsayılan kaynakta `--depo` zorunludur; Teams parametreleri kullanılamaz. Geçersiz birleşimler exit 2 verir ve ayarlar dosyasına iz bırakmaz.
 * `--teams-tenant` opsiyoneldir; verilmezse `TEAMS_TENANT_ID` ortam değişkeni kullanılır. Öncelik: ders kaydı > ortam değişkeni.
 * `TEAMS_CLIENT_ID` ve `TEAMS_CLIENT_SECRET` yalnız ortam değişkenlerinde tutulur. `ayarlar.json`'a, durum dosyasına veya günlüğe yazılmazlar. Ortam değişkenlerini `setx` ile değiştirdikten sonra yeni terminal/görev süreçleri başlatın.
-* Zamanlanmış görev için de `TEAMS_TENANT_ID`, `TEAMS_CLIENT_ID` ve `TEAMS_CLIENT_SECRET` görevin çalıştığı Windows kullanıcı hesabında tanımlı olmalıdır.
+* Zamanlanmış görev için `TEAMS_CLIENT_ID` ve `TEAMS_CLIENT_SECRET` görevin çalıştığı Windows kullanıcı hesabında tanımlı olmalıdır. Ders kaydında `tenantId` yoksa `TEAMS_TENANT_ID` aynı kullanıcı hesabında tanımlanmalıdır.
 * Sağlayıcı QuickXorHash ve/veya SHA-1 sunuyorsa mevcut hash katmanlarının tümü doğrulanır. Hash yoksa varsayılan fail-closed davranışla dosya reddedilir.
-* `--zayif-dogrulama` yalnız `--ekle --kaynak teams` ile kullanılır; varsayılan kapalıdır. Açılırsa boyut, indirme öncesi/sonrası eTag ve yerel SHA-256 uygulanır; yalnız gerçekten hash bulunmayan dosyalarda uyarı ve `zayif_dogrulama` sayacı oluşur. Bu yol sağlayıcı hash doğrulamasıyla eşdeğer değildir.
+* `--zayif-dogrulama` yalnız `--ekle --kaynak teams` ile kullanılır; varsayılan kapalıdır. Açılırsa boyut, indirme öncesi/sonrası eTag ve yerel SHA-256 uygulanır; yalnız gerçekten desteklenen hash bulunmayan dosyalarda canlı kabul uyarısı ve `zayif_dogrulama` sayacı oluşur. Kuru önizlemede plan uyarısı gösterilir ancak kabul sayacı artmaz. Bu yol sağlayıcı hash doğrulamasıyla eşdeğer değildir.
 * TUI'de `Dersler` → `Yeni ders ekle` kaynağı seçtirir ve yalnız seçilen kaynağın alanlarını sorar; Teams için zayıf doğrulama risk uyarısıyla onaylanır.
 * Tam kimlikler yalnız `ayarlar.json` içinde tutulur; `--ayarlar`, `--durum` ve `--listele` JSON/insan görünümlerinde yalnız redakte edilmiş özet görünür. Durum ve Markdown'daki Teams kaynak URI'si de kısaltılmış kimlik kullanır. Ön kimlikli indirme URL'si hiçbir kalıcı alana veya günlüğe yazılmaz.
 * Graph sağlık yoklaması token + tek klasör isteği yapar. Gerçek Teams bağlantısını doğrulamak için `python dersmerkezi.py --saglik --ders <teams-slug>` kullanın.
@@ -188,7 +188,7 @@ python dersmerkezi.py --durum --json
 python dersmerkezi.py --saglik
 ```
 
-Beklenen: derleme hatasız; çekme `atlanan=1` ile 0 kodu döner; durum çıktısında görev `kayitli (Ready)` görünür; `--surum` `CHANGELOG.md` son sürümüyle aynı; JSON çıktısı `json.loads` ile ayrıştırılabilir; sağlık kontrolü sorunsuzsa 0 döner. Ayrıntılı günlük: `gunluk.log`.
+Beklenen: derleme hatasız; bu depodaki `dosya-organizasyonu` dersi çekmesi `atlanan=2` ile 0 kodu döner; durum çıktısında görev `kayitli (Ready)` görünür; `--surum` `CHANGELOG.md` son sürümüyle aynı; JSON çıktısı `json.loads` ile ayrıştırılabilir; GitHub sağlık kontrolü sorunsuzsa 0 döner. Ayrıntılı günlük: `gunluk.log`.
 
 ## Sorun Giderme
 

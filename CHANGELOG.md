@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.0 - 2026-09-23
+## 0.2.0 - 2026-09-24
 
 ### Eklendi
 
@@ -15,7 +15,7 @@
 
 ### Doğrulama
 
-* Geçici kopya regresyon paketi 422/422 (206 birim/akış + 155 kapsam + 47 uçtan uca + 14 tetikleme/sahiplik); T0 şema/CLI/görünüm/sağlık paketi 199 kontrol; T1 Graph güvenlik ve QuickXor karşılaştırma paketi 218 kontrol; T2 Graph sahte yanıt/idempotans paketi 39 kontrol.
+* Geçici kopya regresyon paketi 423/423 (206 birim/akış + 156 kapsam + 47 uçtan uca + 14 tetikleme/sahiplik); T0 şema/CLI/görünüm/sağlık paketi 199 kontrol; T1 Graph güvenlik ve QuickXor karşılaştırma paketi 220 kontrol; T2 Graph sahte yanıt/idempotans paketi 57 kontrol.
 * Gerçek proje kapısı: `compileall` exit 0; `--cek --ders dosya-organizasyonu --sessiz` exit 0 (`atlanan=2`); `--durum` (`Ready`); `--surum` `DersMerkezi 0.2.0`; `--ayarlar --json` başarılı. GitHub anonim API kotası yenilendikten sonra çekme/E2E kapısı tekrarlandı ve geçti.
 * Yerel T1-T3 testleri sahte Graph yanıtları ve bağımsız QuickXor referansıyla geçti. Bu ortamda Teams Entra kimlik bilgileri bulunmadığından gerçek tenant tokenı/Teams test göreviyle kimlik doğrulama yapılmadı; işletimsel canlı kabul için kullanıcı ortam değişkenleriyle doğrulama gerekir.
 

@@ -39,7 +39,7 @@ Lisans: Apache-2.0 (bkz. `LICENSE`, `NOTICE`).
 * Teams dersi ekleme: `python dersmerkezi.py --ekle --ad "Ornek Ders" --kaynak teams --teams-drive "b!..." --teams-item "01ABC..." [--teams-tenant "<tenant>"]`
 * Teams dersini çekme: `python dersmerkezi.py --cek --ders ornek-ders --sessiz` (Graph app-only kimlik bilgileri ortam değişkenlerinde tanımlı olmalıdır).
 * Teams sağlık yoklaması: `python dersmerkezi.py --saglik --ders ornek-ders --json`.
-* `--zayif-dogrulama` yalnız Teams kaydıyla açıkça verilebilir; sağlayıcı hash'i olmayan dosyalarda eTag + boyut + yerel SHA-256 kullanır, uyarı ve sayaç üretir.
+* `--zayif-dogrulama` yalnız Teams kaydıyla açıkça verilebilir; sağlayıcı hash'i olmayan dosyalarda eTag + boyut + yerel SHA-256 kullanır. Canlı kabulde uyarı ve sayaç üretir; kuru önizleme yalnız plan uyarısı gösterir.
 * Listeleme: `python dersmerkezi.py --listele` / JSON: `python dersmerkezi.py --listele --json`
 * Ders silme: `python dersmerkezi.py --sil --ders dosya-organizasyonu --onayla` (onaysız çağrı exit 2; varsa görevi de kaldırır)
 * Çekme: `python dersmerkezi.py --cek --ders dosya-organizasyonu --sessiz`

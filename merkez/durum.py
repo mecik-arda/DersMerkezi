@@ -14,8 +14,16 @@ def _durum_ozeti(kimlik):
         dosyalar = veri.get("dosyalar") or {}
         if not isinstance(dosyalar, dict):
             raise ValueError("dosyalar bölümü geçersiz")
+        bayt = 0
+        for kayit in dosyalar.values():
+            if not isinstance(kayit, dict):
+                raise ValueError("dosya durum kaydı geçersiz")
+            boyut = int(kayit.get("boyut") or 0)
+            if boyut < 0:
+                raise ValueError("dosya boyutu geçersiz")
+            bayt += boyut
         ozet["dosya"] = len(dosyalar)
-        ozet["bayt"] = sum(int((kayit or {}).get("boyut") or 0) for kayit in dosyalar.values())
+        ozet["bayt"] = bayt
         ozet["guncelleme"] = veri.get("guncelleme") or None
     except (OSError, ValueError, TypeError):
         ozet["hata"] = "durum dosyası okunamadı"
